@@ -1,0 +1,58 @@
+問１
+Typing.fは型検査する関数なので、
+その中で受けた字句解析の結果を検査する前に、
+プリントアウト用の自作関数を適用するようにしました。
+
+let f e =
+  extenv := M.empty;
+  (try unify Type.Unit (g M.empty e)
+  with Unify _ -> failwith "top level does not have type unit");
+  show_syntax_tree "  " e; (* 自作関数 *)
+  extenv := M.map deref_typ !extenv;
+  deref_term e
+
+字句解析の結果の型によって、
+複数のTyping.tを含めて、
+それを順番に出力する必要があるので、
+show_syntax_treesとshow_syntax_treeをまとめて定義しました。
+
+let rec show_syntax_trees indent list =
+  match list with
+  | [] -> ()
+  | t::ys -> show_syntax_tree indent t; show_syntax_trees indent ys
+and show_syntax_tree indent e =
+  match e with
+  | Unit -> print_string (indent ^ "UNIT\n")
+  | Bool(b) -> print_string (indent ^ "BOOL "); Printf.printf "%B\n" (b)
+  | Int(i) -> print_string (indent ^ "INT "); Printf.printf "%i\n" (i)
+  | Float(f) -> print_string (indent ^ "FLOAT "); Printf.printf "%F\n" (f)
+  ......
+
+テストファイルはtarget.mlです。
+実行結果は以下です。
+
+  LETREC fibn =
+    IF
+      LE
+        VAR n
+        INT 1
+    THEN
+      VAR n
+    ELSE
+      ADD
+        APP
+        VAR fib
+          SUB
+            VAR n
+            INT 1
+        APP
+        VAR fib
+          SUB
+            VAR n
+            INT 2
+  IN
+    APP
+    VAR print_int
+      APP
+      VAR fib
+        INT 30

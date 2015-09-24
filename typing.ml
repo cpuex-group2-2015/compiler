@@ -8,7 +8,7 @@ exception Error of t * Type.t * Type.t
 let extenv = ref M.empty
 
 (* for pretty printing (and type normalization) *)
-let rec deref_typ = function (* ·¿ÊÑ¿ô¤òÃæ¿È¤Ç¤ª¤­¤«¤¨¤ë´Ø¿ô (caml2html: typing_deref) *)
+let rec deref_typ = function (* åž‹å¤‰æ•°ã‚’ä¸­èº«ã§ãŠãã‹ãˆã‚‹é–¢æ•° (caml2html: typing_deref) *)
   | Type.Fun(t1s, t2) -> Type.Fun(List.map deref_typ t1s, deref_typ t2)
   | Type.Tuple(ts) -> Type.Tuple(List.map deref_typ ts)
   | Type.Array(t) -> Type.Array(deref_typ t)
@@ -58,7 +58,7 @@ let rec occur r1 = function (* occur check (caml2html: typing_occur) *)
   | Type.Var({ contents = Some(t2) }) -> occur r1 t2
   | _ -> false
 
-let rec unify t1 t2 = (* ·¿¤¬¹ç¤¦¤è¤¦¤Ë¡¢·¿ÊÑ¿ô¤Ø¤ÎÂåÆþ¤ò¤¹¤ë (caml2html: typing_unify) *)
+let rec unify t1 t2 = (* åž‹ãŒåˆã†ã‚ˆã†ã«ã€åž‹å¤‰æ•°ã¸ã®ä»£å…¥ã‚’ã™ã‚‹ (caml2html: typing_unify) *)
   match t1, t2 with
   | Type.Unit, Type.Unit | Type.Bool, Type.Bool | Type.Int, Type.Int | Type.Float, Type.Float -> ()
   | Type.Fun(t1s, t1'), Type.Fun(t2s, t2') ->
@@ -72,7 +72,7 @@ let rec unify t1 t2 = (* ·¿¤¬¹ç¤¦¤è¤¦¤Ë¡¢·¿ÊÑ¿ô¤Ø¤ÎÂåÆþ¤ò¤¹¤ë (caml2html: typing
   | Type.Var(r1), Type.Var(r2) when r1 == r2 -> ()
   | Type.Var({ contents = Some(t1') }), _ -> unify t1' t2
   | _, Type.Var({ contents = Some(t2') }) -> unify t1 t2'
-  | Type.Var({ contents = None } as r1), _ -> (* °ìÊý¤¬Ì¤ÄêµÁ¤Î·¿ÊÑ¿ô¤Î¾ì¹ç (caml2html: typing_undef) *)
+  | Type.Var({ contents = None } as r1), _ -> (* ä¸€æ–¹ãŒæœªå®šç¾©ã®åž‹å¤‰æ•°ã®å ´åˆ (caml2html: typing_undef) *)
       if occur r1 t2 then raise (Unify(t1, t2));
       r1 := Some(t2)
   | _, Type.Var({ contents = None } as r2) ->
@@ -80,7 +80,7 @@ let rec unify t1 t2 = (* ·¿¤¬¹ç¤¦¤è¤¦¤Ë¡¢·¿ÊÑ¿ô¤Ø¤ÎÂåÆþ¤ò¤¹¤ë (caml2html: typing
       r2 := Some(t1)
   | _, _ -> raise (Unify(t1, t2))
 
-let rec g env e = (* ·¿¿äÏÀ¥ë¡¼¥Á¥ó (caml2html: typing_g) *)
+let rec g env e = (* åž‹æŽ¨è«–ãƒ«ãƒ¼ãƒãƒ³ (caml2html: typing_g) *)
   try
     match e with
     | Unit -> Type.Unit
@@ -93,7 +93,7 @@ let rec g env e = (* ·¿¿äÏÀ¥ë¡¼¥Á¥ó (caml2html: typing_g) *)
     | Neg(e) ->
 	unify Type.Int (g env e);
 	Type.Int
-    | Add(e1, e2) | Sub(e1, e2) -> (* Â­¤·»»¡Ê¤È°ú¤­»»¡Ë¤Î·¿¿äÏÀ (caml2html: typing_add) *)
+    | Add(e1, e2) | Sub(e1, e2) -> (* è¶³ã—ç®—ï¼ˆã¨å¼•ãç®—ï¼‰ã®åž‹æŽ¨è«– (caml2html: typing_add) *)
 	unify Type.Int (g env e1);
 	unify Type.Int (g env e2);
 	Type.Int
@@ -113,21 +113,21 @@ let rec g env e = (* ·¿¿äÏÀ¥ë¡¼¥Á¥ó (caml2html: typing_g) *)
 	let t3 = g env e3 in
 	unify t2 t3;
 	t2
-    | Let((x, t), e1, e2) -> (* let¤Î·¿¿äÏÀ (caml2html: typing_let) *)
+    | Let((x, t), e1, e2) -> (* letã®åž‹æŽ¨è«– (caml2html: typing_let) *)
 	unify t (g env e1);
 	g (M.add x t env) e2
-    | Var(x) when M.mem x env -> M.find x env (* ÊÑ¿ô¤Î·¿¿äÏÀ (caml2html: typing_var) *)
+    | Var(x) when M.mem x env -> M.find x env (* å¤‰æ•°ã®åž‹æŽ¨è«– (caml2html: typing_var) *)
     | Var(x) when M.mem x !extenv -> M.find x !extenv
-    | Var(x) -> (* ³°ÉôÊÑ¿ô¤Î·¿¿äÏÀ (caml2html: typing_extvar) *)
+    | Var(x) -> (* å¤–éƒ¨å¤‰æ•°ã®åž‹æŽ¨è«– (caml2html: typing_extvar) *)
 	Format.eprintf "free variable %s assumed as external@." x;
 	let t = Type.gentyp () in
 	extenv := M.add x t !extenv;
 	t
-    | LetRec({ name = (x, t); args = yts; body = e1 }, e2) -> (* let rec¤Î·¿¿äÏÀ (caml2html: typing_letrec) *)
+    | LetRec({ name = (x, t); args = yts; body = e1 }, e2) -> (* let recã®åž‹æŽ¨è«– (caml2html: typing_letrec) *)
 	let env = M.add x t env in
 	unify t (Type.Fun(List.map snd yts, g (M.add_list yts env) e1));
 	g env e2
-    | App(e, es) -> (* ´Ø¿ôÅ¬ÍÑ¤Î·¿¿äÏÀ (caml2html: typing_app) *)
+    | App(e, es) -> (* é–¢æ•°é©ç”¨ã®åž‹æŽ¨è«– (caml2html: typing_app) *)
 	let t = Type.gentyp () in
 	unify (g env e) (Type.Fun(List.map (g env) es, t));
 	t
@@ -150,6 +150,91 @@ let rec g env e = (* ·¿¿äÏÀ¥ë¡¼¥Á¥ó (caml2html: typing_g) *)
 	Type.Unit
   with Unify(t1, t2) -> raise (Error(deref_term e, deref_typ t1, deref_typ t2))
 
+let rec arg_list_to_string string list =
+  match list with
+  | [] -> string
+  | (x,_)::ys -> arg_list_to_string (string ^ x ^ " ") ys
+
+let rec show_syntax_trees indent list =
+  match list with
+  | [] -> ()
+  | t::ys -> show_syntax_tree indent t; show_syntax_trees indent ys
+and show_syntax_tree indent e =
+  match e with
+  | Unit -> print_string (indent ^ "UNIT\n")
+  | Bool(b) -> print_string (indent ^ "BOOL "); Printf.printf "%B\n" (b)
+  | Int(i) -> print_string (indent ^ "INT "); Printf.printf "%i\n" (i)
+  | Float(f) -> print_string (indent ^ "FLOAT "); Printf.printf "%F\n" (f)
+  | Not(e) -> print_string (indent ^ "NOT\n"); show_syntax_tree (indent ^ "  ") e
+  | Neg(e) -> print_string (indent ^ "NEG\n"); show_syntax_tree (indent ^ "  ") e
+  | Add(e1, e2) ->
+     print_string (indent ^ "ADD\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Sub(e1, e2) ->
+     print_string (indent ^ "SUB\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FNeg(e) ->
+     print_string (indent ^ "FNEG\n");
+     show_syntax_tree (indent ^ "  ") e
+  | FAdd(e1, e2) ->
+     print_string (indent ^ "FADD\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FSub(e1, e2) ->
+     print_string (indent ^ "FSUB\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FMul(e1, e2) ->
+     print_string (indent ^ "FMUL\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FDiv(e1, e2) ->
+     print_string (indent ^ "FDIV\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Eq(e1, e2) ->
+     print_string (indent ^ "EQ\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | LE(e1, e2) ->
+     print_string (indent ^ "LE\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | If(e1, e2, e3) ->
+     print_string (indent ^ "IF\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "THEN\n");
+     show_syntax_tree (indent ^ "  ") e2;
+     print_string (indent ^ "ELSE\n");
+     show_syntax_tree (indent ^ "  ") e3
+  | Let((x, t), e1, e2) ->
+     print_string (indent ^ "LET " ^ x ^ " =\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree (indent ^ "  ") e2
+  | Var(x) ->
+     print_string (indent ^ "VAR " ^ x ^ "\n")
+  | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
+     print_string (indent ^ "LETREC " ^ x ^ (arg_list_to_string "" yts) ^ "=\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree (indent ^ "  ") e2
+  | App(e, es) ->
+     print_string (indent ^ "APP\n");
+     show_syntax_tree indent e;
+     show_syntax_trees (indent ^ "  ") es
+  | Tuple(es) ->
+     print_string (indent ^ "TUPLE\n");
+     show_syntax_trees (indent ^ "  ") es
+  | LetTuple(xts, e1, e2) ->
+     print_string (indent ^ "LETTUPLE ( " ^ (arg_list_to_string "" xts) ^ ") =\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree (indent ^ "  ") e2
+  | Array(e1, e2) ->
+     print_string (indent ^ "ARRAY\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Get(e1, e2) ->
+     print_string (indent ^ "GET\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Put(e1, e2, e3) ->
+     print_string (indent ^ "PUT\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2; e3]
+
 let f e =
   extenv := M.empty;
 (*
@@ -159,5 +244,6 @@ let f e =
 *)
   (try unify Type.Unit (g M.empty e)
   with Unify _ -> failwith "top level does not have type unit");
+  show_syntax_tree "  " e;
   extenv := M.map deref_typ !extenv;
   deref_term e
