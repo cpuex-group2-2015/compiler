@@ -56,3 +56,24 @@ and show_syntax_tree indent e =
       APP
       VAR fib
         INT 30
+
+問2
+パースエラーの時に、問題が発生したところの行の番号とその行においての具体的な場所を出力させました。
+
+まずはlexer.mllに、spaceから改行を除いてから以下を挿入しました。
+| "\n"
+    { Lexing.new_line lexbuf;
+      token lexbuf }
+
+そして、parse.mlyにエラーが発生するときに、その場所を出力するロジックを書きました。
+
+let rec fib n =
+  if n <= 1 then n else
+  else
+  fib (n-1) + fib (n-2)
+in
+  print_int fib 30
+
+上のコードに対して、ちゃんと問題発生する場所を教えました。
+
+Fatal error: exception Failure("Parse error at line 3 character 2")

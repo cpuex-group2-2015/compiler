@@ -205,7 +205,7 @@ and show_syntax_tree indent e =
      print_string (indent ^ "LET " ^ x ^ " =\n");
      show_syntax_tree (indent ^ "  ") e1;
      print_string (indent ^ "IN\n");
-     show_syntax_tree (indent ^ "  ") e2
+     show_syntax_tree indent e2
   | Var(x) ->
      print_string (indent ^ "VAR " ^ x ^ "\n")
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
@@ -243,7 +243,8 @@ let f e =
   | _ -> Format.eprintf "warning: final result does not have type unit@.");
 *)
   (try unify Type.Unit (g M.empty e)
-  with Unify _ -> failwith "top level does not have type unit");
+  with Unify _ -> failwith "you have to print out something");
+  print_string "Syntax\n";
   show_syntax_tree "  " e;
   extenv := M.map deref_typ !extenv;
   deref_term e
