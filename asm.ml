@@ -1,4 +1,5 @@
 (* PowerPC assembly with a few virtual instructions *)
+open Id
 
 type id_or_imm = V of Id.t | C of int
 type t = (* 命令の列 *)
@@ -105,3 +106,108 @@ let rec concat e1 xt e2 = match e1 with
 
 (* align : int -> int *)
 let align i = if i mod 8 = 0 then i else i + 4
+
+let print_prog_data (L(l), f) =
+  print_string ("\t" ^ l ^ "\t");
+  print_float f;
+  print_string "\n"
+
+let rec print_prog_datas datas = match datas with
+  | [] -> ()
+  | y::ys -> print_prog_data y; print_prog_datas ys
+
+let rec args_to_string string args = match args with
+  | [] -> string
+  | y::ys -> args_to_string (string ^ y ^ " ") ys
+
+let id_or_imm_to_string i = match i with
+  | V (id) -> id
+  | C (int) -> string_of_int int
+
+let rec print_asm_t indent t = match t with
+  | Ans (exp) -> print_string (indent ^ "Ans\n"); print_asm_exp indent exp
+  | Let ((x, xt), exp, t) ->
+     print_string (indent ^ "LET " ^ x ^ " : " ^ (Type.type_to_string xt) ^ " =\n");
+     print_asm_exp (indent ^ "  ") exp;
+     print_asm_t indent t;
+and print_asm_exp indent exp = match exp with
+  | Nop -> print_string (indent ^ "NOP\n")
+  | Li (int) -> print_string (indent ^ "Li " ^ (string_of_int int) ^ "\n")
+  | FLi (L(l)) -> print_string (indent ^ "FLi " ^ l ^ "\n")
+  | SetL (L(l)) -> print_string (indent ^ "SetL" ^ l ^ "\n")
+  | Mr (t) -> print_string (indent ^ "Mr " ^ t ^ "\n")
+  | Neg (t) -> print_string (indent ^ "Neg " ^ t ^ "\n")
+  | Add (t, i) -> print_string (indent ^ "Add " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Sub (t, i) -> print_string (indent ^ "Sub " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Slw (t, i) -> print_string (indent ^ "Slw " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Lwz (t, i) -> print_string (indent ^ "Lwz " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Stw (t1, t2, i) -> print_string (indent ^ "Stw " ^ t1 ^ " " ^ t2 ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | FMr (t) -> print_string (indent ^ "FMr " ^ t ^ "\n")
+  | FNeg (t) -> print_string (indent ^ "FNeg " ^ t ^ "\n")
+  | FAdd (t1, t2) -> print_string (indent ^ "FAdd " ^ t1 ^ " " ^ t2 ^ "\n")
+  | FSub (t1, t2) -> print_string (indent ^ "FSub " ^ t1 ^ " " ^ t2 ^ "\n")
+  | FMul (t1, t2) -> print_string (indent ^ "FMul " ^ t1 ^ " " ^ t2 ^ "\n")
+  | FDiv (t1, t2) -> print_string (indent ^ "FDiv " ^ t1 ^ " " ^ t2 ^ "\n")
+  | Lfd (t, i) -> print_string (indent ^ "Lfd " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Stfd (t1, t2, i) -> print_string (indent ^ "Stfd " ^ t1 ^ " " ^ t2 ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Comment (s) -> print_string (indent ^ "Comment " ^ s ^ "\n")
+  | IfEq (i, id, t1, t2) ->
+     print_string (indent ^ "IfEq " ^ i ^ " " ^ (id_or_imm_to_string id) ^ " Then\n");
+     print_asm_t (indent ^ "  ") t1;
+     print_string (indent ^ "Else\n");
+     print_asm_t (indent ^ "  ") t2
+  | IfLE (i, id, t1, t2) ->
+     print_string (indent ^ "IfLE " ^ i ^ " " ^ (id_or_imm_to_string id) ^ " Then\n");
+     print_asm_t (indent ^ "  ") t1;
+     print_string (indent ^ "Else\n");
+     print_asm_t (indent ^ "  ") t2
+  | IfGE (i, id, t1, t2) ->
+     print_string (indent ^ "IfGE " ^ i ^ " " ^ (id_or_imm_to_string id) ^ " Then\n");
+     print_asm_t (indent ^ "  ") t1;
+     print_string (indent ^ "Else\n");
+     print_asm_t (indent ^ "  ") t2
+  | IfFEq (i1, i2, t1, t2) ->
+     print_string (indent ^ "IfFEq " ^ i1 ^ " " ^ i2 ^ " Then\n");
+     print_asm_t (indent ^ "  ") t1;
+     print_string (indent ^ "Else\n");
+     print_asm_t (indent ^ "  ") t2
+  | IfFLE (i1, i2, t1, t2) ->
+     print_string (indent ^ "IfFLE " ^ i1 ^ " " ^ i2 ^ " Then\n");
+     print_asm_t (indent ^ "  ") t1;
+     print_string (indent ^ "Else\n");
+     print_asm_t (indent ^ "  ") t2
+  | CallCls (i, is1, is2) ->
+     print_string (indent ^ "CallCls\n");
+     print_string (indent ^ "  1st param : " ^ i ^ "\n");
+     print_string (indent ^ "  2nd param : " ^ (args_to_string "" is1) ^ "\n");
+     print_string (indent ^ "  3rd param : " ^ (args_to_string "" is2) ^ "\n")
+  | CallDir (L(l), is1, is2) ->
+     print_string (indent ^ "CallDir\n");
+     print_string (indent ^ "  1st param : " ^ l ^ "\n");
+     print_string (indent ^ "  2nd param : " ^ (args_to_string "" is1) ^ "\n");
+     print_string (indent ^ "  3rd param : " ^ (args_to_string "" is2) ^ "\n")
+  | Save (t1, t2) -> print_string (indent ^ "Save " ^ t1 ^ " " ^ t2 ^ "\n")
+  | Restore (t) -> print_string (indent ^ "Restore " ^ t ^ "\n")
+
+let print_prog_fundef { name = L(n); args = args; fargs = fargs; body = body; ret = ret } =
+  print_string ("\tFundef " ^ n ^ "\n");
+  print_string ("\tArgs " ^ (args_to_string "" args) ^ "\n");
+  print_string ("\tFargs " ^ (args_to_string "" fargs) ^ "\n");
+  print_string "\tBody\n";
+  print_asm_t "\t" body;
+  print_string ("\tRet " ^ (Type.type_to_string ret) ^ "\n")
+
+let rec print_prog_fundefs fundefs = match fundefs with
+  | [] -> ()
+  | y::ys -> print_prog_fundef y; print_prog_fundefs ys
+
+(* show_asm_prog : string -> prog -> unit *)
+let show_asm_prog indent p =
+  let Prog(datas, fundefs, e) = p in
+  print_string "\tshowing asm prog structure...\n";
+  print_string "\tstarted printing datas...\n";
+  print_prog_datas datas;
+  print_string "\tstarted printing fundefs...\n";
+  print_prog_fundefs fundefs;
+  print_string "\tstarted printing asm t...\n";
+  print_asm_t (indent ^ "\t") e

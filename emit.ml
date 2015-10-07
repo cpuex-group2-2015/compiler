@@ -276,7 +276,10 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   stackmap := [];
   g oc (Tail, e)
 
-let f oc (Prog(data, fundefs, e)) =
+(* let f oc (Prog(data, fundefs, e)) = *)
+let f oc p =
+  show_asm_prog "  " p;
+  let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
     (Printf.fprintf oc "\t.data\n\t.literal8\n";
