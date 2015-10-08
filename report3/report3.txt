@@ -1,0 +1,73 @@
+崔 正行
+05-151016
+
+問1
+Schemeの57番課題は以下の様に書きました。
+(define (if-fun exp1 exp2 exp3)
+  (if exp1 exp2 exp3))
+(define (ff n)
+  (if-fun (= n 1)
+          (lambda (x) (* n x))
+          (lambda (x) (* n x ((ff (- n 1)) 1)))))
+(define (fact4 n) ((ff n) 1))
+
+OCamlになおすとこのようになります。
+let iffun e1 e2 e3 =
+  if e1 then e2 else e3
+let rec ff n =
+  (iffun
+     (n = 1)
+     (let g x = n * x in g)
+     (let h x = n * x * (ff (n-1) 1) in h))
+
+自由変数をなくすとこのようになります。
+let iffun e1 e2 e3 =
+  if e1 then e2 else e3
+let rec ff_new n =
+  (iffun
+     (n = 1)
+     (let g n x = n * x in g n)
+     (let h n x = n * x * (ff (n-1) 1) in h n))
+
+動作確認はできました。
+
+問3
+1. let z = 4 in let rec f x = x – z in f 8
+
+関数に自由変数zが含まれているので、クロージャを作る必要があります。
+クロージャに含まれるラベルはLfで、変数はzです。
+
+2. let rec g x = x – 2 in g 6
+
+関数に自由変数もなくて、後の式で直接呼び出されているので、
+クロージャを作る必要がありません。
+
+3. let rec f x = x – 1 in f
+
+関数fに自由変数はないが、式で値として渡されたので、
+クロージャを作る必要があります。
+クロージャに含まれるラベルはLfです。
+
+4. let rec g h = let rec i x = h x in i in g
+
+gは式で渡されているので、ラベルLgを含むクロージャを作る必要があります。
+iにはhという自由変数があるので、
+ラベルLiと変数hを含むクロージャを作る必要があります。
+
+5. let rec i x = x in
+   let z = 4 in
+   let rec f x = i (z – 5) in
+     if z < 6 then (i, f 7) else (f, 8)
+
+iには自由変数がないが、組の中で値として返されたので、
+ラベルLiを含むクロージャを作る必要があります。
+fには自由変数があるので、
+ラベルLf、変数iとzのクロージャを作る必要があります。
+
+6. let rec fact x =
+     if x = 1 then 1
+     else x * fact (x – 1) in
+     fact 6
+
+factには自由変数がなくて、
+しかも式で直接呼び出されているのでクロージャを作る必要がありません。
