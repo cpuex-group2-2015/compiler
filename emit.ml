@@ -3,6 +3,10 @@ open Asm
 external gethi : float -> int32 = "gethi"
 external getlo : float -> int32 = "getlo"
 
+let file = ref ""
+let address = ref 0
+let address_list = Hashtbl.create 0
+
 let stackset = ref S.empty (* すでに Save された変数の集合 *)
 let stackmap = ref [] (* Save された変数のスタックにおける位置 *)
 let save x =
@@ -48,6 +52,7 @@ let rec shuffle sw xys =
       | (xys, acyc) -> acyc @ shuffle sw xys
 
 type dest = Tail | NonTail of Id.t (* 末尾かどうかを表すデータ型 *)
+
 let rec g oc = function (* 命令列のアセンブリ生成 *)
   | (dest, Ans (exp)) -> g' oc (dest, exp)
   | (dest, Let((x, t), exp, e)) -> g' oc (NonTail (x), exp); g oc (dest, e)
@@ -55,203 +60,275 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
     (* 末尾でなかったら計算結果を dest にセット *)
   | (NonTail(_), Nop) -> ()
   | (NonTail(x), Li(i)) when i >= -32768 && i < 32768 ->
-      Printf.fprintf oc "\tli\t%s, %d\n" (reg x) i
+      file := !file ^ Printf.sprintf "\tli\t%s, %d\n" (reg x) i;
+      address := !address + 1
   | (NonTail(x), Li(i)) ->
       let n = i lsr 16 in
       let m = i lxor (n lsl 16) in
       let r = reg x in
-	Printf.fprintf oc "\tlis\t%s, %d\n" r n;
-	Printf.fprintf oc "\tori\t%s, %s, %d\n" r r m
+	file := !file ^ Printf.sprintf "\tlis\t%s, %d\n" r n;
+	file := !file ^ Printf.sprintf "\tori\t%s, %s, %d\n" r r m;
+	address := !address + 2
   | (NonTail(x), FLi(Id.L(l))) ->
       let s = load_label reg_tmp l in
-      Printf.fprintf oc "%s\tlfd\t%s, 0(%s)\n" s (reg x) reg_tmp
+      file := !file ^ Printf.sprintf "%s\tlfd\t%s, 0(%s)\n" s (reg x) reg_tmp;
+      address := !address + 1
   | (NonTail(x), SetL(Id.L(y))) ->
       let s = load_label x y in
-      Printf.fprintf oc "%s" s
+      file := !file ^ Printf.sprintf "%s" s;
+      address := !address + 1
   | (NonTail(x), Mr(y)) when x = y -> ()
-  | (NonTail(x), Mr(y)) -> Printf.fprintf oc "\tmr\t%s, %s\n" (reg x) (reg y)
-  | (NonTail(x), Neg(y)) -> Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg y)
+  | (NonTail(x), Mr(y)) ->
+     file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg x) (reg y);
+     address := !address + 1
+  | (NonTail(x), Neg(y)) ->
+     file := !file ^ Printf.sprintf "\tneg\t%s, %s\n" (reg x) (reg y);
+     address := !address + 1
   | (NonTail(x), Add(y, V(z))) ->
-      Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Add(y, C(z))) ->
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" (reg x) (reg y) z
+      file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" (reg x) (reg y) z;
+      address := !address + 1
   | (NonTail(x), Sub(y, V(z))) ->
-      Printf.fprintf oc "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Sub(y, C(z))) ->
-      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z
+      file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
+      address := !address + 1
   | (NonTail(x), Slw(y, V(z))) ->
-      Printf.fprintf oc "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Slw(y, C(z))) ->
-      Printf.fprintf oc "\tslwi\t%s, %s, %d\n" (reg x) (reg y) z
+      file := !file ^ Printf.sprintf "\tslwi\t%s, %s, %d\n" (reg x) (reg y) z;
+      address := !address + 1
   | (NonTail(x), Lwz(y, V(z))) ->
-      Printf.fprintf oc "\tlwzx\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tlwzx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Lwz(y, C(z))) ->
-      Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" (reg x) z (reg y)
+      file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" (reg x) z (reg y);
+      address := !address + 1
   | (NonTail(_), Stw(x, y, V(z))) ->
-      Printf.fprintf oc "\tstwx\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tstwx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(_), Stw(x, y, C(z))) ->
-      Printf.fprintf oc "\tstw\t%s, %d(%s)\n" (reg x) z (reg y)
+      file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" (reg x) z (reg y);
+      address := !address + 1
   | (NonTail(x), FMr(y)) when x = y -> ()
-  | (NonTail(x), FMr(y)) -> Printf.fprintf oc "\tfmr\t%s, %s\n" (reg x) (reg y)
+  | (NonTail(x), FMr(y)) ->
+     file := !file ^ Printf.sprintf "\tfmr\t%s, %s\n" (reg x) (reg y);
+     address := !address + 1
   | (NonTail(x), FNeg(y)) ->
-      Printf.fprintf oc "\tfneg\t%s, %s\n" (reg x) (reg y)
+      file := !file ^ Printf.sprintf "\tfneg\t%s, %s\n" (reg x) (reg y);
+      address := !address + 1
   | (NonTail(x), FAdd(y, z)) ->
-      Printf.fprintf oc "\tfadd\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tfadd\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), FSub(y, z)) ->
-      Printf.fprintf oc "\tfsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tfsub\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), FMul(y, z)) ->
-      Printf.fprintf oc "\tfmul\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tfmul\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), FDiv(y, z)) ->
-      Printf.fprintf oc "\tfdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tfdiv\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Lfd(y, V(z))) ->
-      Printf.fprintf oc "\tlfdx\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tlfdx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(x), Lfd(y, C(z))) ->
-      Printf.fprintf oc "\tlfd\t%s, %d(%s)\n" (reg x) z (reg y)
+      file := !file ^ Printf.sprintf "\tlfd\t%s, %d(%s)\n" (reg x) z (reg y);
+      address := !address + 1
   | (NonTail(_), Stfd(x, y, V(z))) ->
-      Printf.fprintf oc "\tstfdx\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+      file := !file ^ Printf.sprintf "\tstfdx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      address := !address + 1
   | (NonTail(_), Stfd(x, y, C(z))) ->
-      Printf.fprintf oc "\tstfd\t%s, %d(%s)\n" (reg x) z (reg y)
-  | (NonTail(_), Comment(s)) -> Printf.fprintf oc "#\t%s\n" s
+      file := !file ^ Printf.sprintf "\tstfd\t%s, %d(%s)\n" (reg x) z (reg y);
+      address := !address + 1
+  | (NonTail(_), Comment(s)) ->
+     file := !file ^ Printf.sprintf "#\t%s\n" s;
+     address := !address + 1
   (* 退避の仮想命令の実装 *)
   | (NonTail(_), Save(x, y))
       when List.mem x allregs && not (S.mem y !stackset) ->
       save y;
-	Printf.fprintf oc "\tstw\t%s, %d(%s)\n" (reg x) (offset y) reg_sp
+	file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+	address := !address + 1
   | (NonTail(_), Save(x, y))
       when List.mem x allfregs && not (S.mem y !stackset) ->
       savef y;
-	Printf.fprintf oc "\tstfd\t%s, %d(%s)\n" (reg x) (offset y) reg_sp
+	file := !file ^ Printf.sprintf "\tstfd\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+	address := !address + 1
   | (NonTail(_), Save(x, y)) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 *)
   | (NonTail(x), Restore(y)) when List.mem x allregs ->
-      Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" (reg x) (offset y) reg_sp
+      file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+      address := !address + 1
   | (NonTail(x), Restore(y)) ->
       assert (List.mem x allfregs);
-      Printf.fprintf oc "\tlfd\t%s, %d(%s)\n" (reg x) (offset y) reg_sp
+      file := !file ^ Printf.sprintf "\tlfd\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+      address := !address + 1
   (* 末尾だったら計算結果を第一レジスタにセット *)
   | (Tail, (Nop | Stw _ | Stfd _ | Comment _ | Save _ as exp)) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
-      Printf.fprintf oc "\tblr\n";
+      file := !file ^ Printf.sprintf "\tblr\n";
+      address := !address + 1
   | (Tail, (Li _ | SetL _ | Mr _ | Neg _ | Add _ | Sub _ | Slw _ |
             Lwz _ as exp)) ->
       g' oc (NonTail(regs.(0)), exp);
-      Printf.fprintf oc "\tblr\n";
+      file := !file ^ Printf.sprintf "\tblr\n";
+      address := !address + 1
   | (Tail, (FLi _ | FMr _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |
             Lfd _ as exp)) ->
       g' oc (NonTail(fregs.(0)), exp);
-      Printf.fprintf oc "\tblr\n";
+      file := !file ^ Printf.sprintf "\tblr\n";
+      address := !address + 1
   | (Tail, (Restore(x) as exp)) ->
       (match locate x with
 	 | [i] -> g' oc (NonTail(regs.(0)), exp)
 	 | [i; j] when (i + 1 = j) -> g' oc (NonTail(fregs.(0)), exp)
 	 | _ -> assert false);
-      Printf.fprintf oc "\tblr\n";
+      file := !file ^ Printf.sprintf "\tblr\n";
+      address := !address + 1
   | (Tail, IfEq(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_tail_if oc e1 e2 "beq" "bne"
   | (Tail, IfEq(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_tail_if oc e1 e2 "beq" "bne"
   | (Tail, IfLE(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_tail_if oc e1 e2 "ble" "bgt"
   | (Tail, IfLE(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_tail_if oc e1 e2 "ble" "bgt"
   | (Tail, IfGE(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_tail_if oc e1 e2 "bge" "blt"
   | (Tail, IfGE(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_tail_if oc e1 e2 "bge" "blt"
   | (Tail, IfFEq(x, y, e1, e2)) ->
-      Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_tail_if oc e1 e2 "beq" "bne"
   | (Tail, IfFLE(x, y, e1, e2)) ->
-      Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_tail_if oc e1 e2 "ble" "bgt"
   | (NonTail(z), IfEq(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne"
   | (NonTail(z), IfEq(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne"
   | (NonTail(z), IfLE(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt"
   | (NonTail(z), IfLE(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt"
   | (NonTail(z), IfGE(x, V(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tcmpw\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "bge" "blt"
   | (NonTail(z), IfGE(x, C(y), e1, e2)) ->
-      Printf.fprintf oc "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "bge" "blt"
   | (NonTail(z), IfFEq(x, y, e1, e2)) ->
-      Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne"
   | (NonTail(z), IfFLE(x, y, e1, e2)) ->
-      Printf.fprintf oc "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      file := !file ^ Printf.sprintf "\tfcmpu\tcr7, %s, %s\n" (reg x) (reg y);
+      address := !address + 1;
       g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt"
   (* 関数呼び出しの仮想命令の実装 *)
   | (Tail, CallCls(x, ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [(x, reg_cl)] ys zs;
-      Printf.fprintf oc "\tlwz\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
-      Printf.fprintf oc "\tmtctr\t%s\n\tbctr\n" (reg reg_sw);
+      file := !file ^ Printf.sprintf "\tlwz\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
+      file := !file ^ Printf.sprintf "\tmtctr\t%s\n\tbctr\n" (reg reg_sw);
+      address := !address + 2;
   | (Tail, CallDir(Id.L(x), ys, zs)) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
-      Printf.fprintf oc "\tb\t%s\n" x
+      file := !file ^ Printf.sprintf "\tb\t%s\n" x;
+      address := !address + 1
   | (NonTail(a), CallCls(x, ys, zs)) ->
-      Printf.fprintf oc "\tmflr\t%s\n" reg_tmp;
+      file := !file ^ Printf.sprintf "\tmflr\t%s\n" reg_tmp;
+      address := !address + 1;
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
-	Printf.fprintf oc "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
-	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	Printf.fprintf oc "\tlwz\t%s, 0(%s)\n" reg_tmp (reg reg_cl);
-	Printf.fprintf oc "\tmtctr\t%s\n" reg_tmp;
-	Printf.fprintf oc "\tbctrl\n";
-	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	file := !file ^ Printf.sprintf "\tlwz\t%s, 0(%s)\n" reg_tmp (reg reg_cl);
+	file := !file ^ Printf.sprintf "\tmtctr\t%s\n" reg_tmp;
+	file := !file ^ Printf.sprintf "\tbctrl\n";
+	file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	address := !address + 7;
 	(if List.mem a allregs && a <> regs.(0) then
-	   Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0))
+	  (file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg a) (reg regs.(0));
+	   address := !address + 1)
 	 else if List.mem a allfregs && a <> fregs.(0) then
-	   Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0)));
-	Printf.fprintf oc "\tmtlr\t%s\n" reg_tmp
+	  (file := !file ^ Printf.sprintf "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
+	   address := !address + 1));
+	file := !file ^ Printf.sprintf "\tmtlr\t%s\n" reg_tmp;
+	address := !address + 1
   | (NonTail(a), CallDir(Id.L(x), ys, zs)) ->
-      Printf.fprintf oc "\tmflr\t%s\n" reg_tmp;
+      file := !file ^ Printf.sprintf "\tmflr\t%s\n" reg_tmp;
+      address := !address + 1;
       g'_args oc [] ys zs;
       let ss = stacksize () in
-	Printf.fprintf oc "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
-	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	Printf.fprintf oc "\tbl\t%s\n" x;
-	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	file := !file ^ Printf.sprintf "\tbl\t%d\n" (Hashtbl.find address_list x);
+	file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
+	file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	address := !address + 5;
 	(if List.mem a allregs && a <> regs.(0) then
-	   Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0))
+	  (file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg a) (reg regs.(0));
+	   address := !address + 1)
 	 else if List.mem a allfregs && a <> fregs.(0) then
-	   Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0)));
-	Printf.fprintf oc "\tmtlr\t%s\n" reg_tmp
+	  (file := !file ^ Printf.sprintf "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
+	   address := !address + 1));
+	file := !file ^ Printf.sprintf "\tmtlr\t%s\n" reg_tmp;
+	address := !address + 1
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%s\tcr7, %s\n" bn b_else;
+    file := !file ^ Printf.sprintf "\t%s\tcr7, %s\n" bn b_else;
+    address := !address + 1;
     let stackset_back = !stackset in
       g oc (Tail, e1);
-      Printf.fprintf oc "%s:\n" b_else;
+      (*file := !file ^ Printf.sprintf "%s:\n" b_else;*)
+      file := Str.global_replace (Str.regexp b_else) (string_of_int !address) !file;
       stackset := stackset_back;
       g oc (Tail, e2)
 and g'_non_tail_if oc dest e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
-    Printf.fprintf oc "\t%s\tcr7, %s\n" bn b_else;
+    file := !file ^ Printf.sprintf "\t%s\tcr7, %s\n" bn b_else;
+    address := !address + 1;
     let stackset_back = !stackset in
       g oc (dest, e1);
       let stackset1 = !stackset in
-	Printf.fprintf oc "\tb\t%s\n" b_cont;
-	Printf.fprintf oc "%s:\n" b_else;
+	file := !file ^ Printf.sprintf "\tb\t%s\n" b_cont;
+	file := !file ^ Printf.sprintf "%s:\n" b_else;
+	address := !address + 2;
 	stackset := stackset_back;
 	g oc (dest, e2);
-	Printf.fprintf oc "%s:\n" b_cont;
+	file := !file ^ Printf.sprintf "%s:\n" b_cont;
+	address := !address + 1;
 	let stackset2 = !stackset in
 	  stackset := S.inter stackset1 stackset2
 and g'_args oc x_reg_cl ys zs =
@@ -260,20 +337,20 @@ and g'_args oc x_reg_cl ys zs =
       (fun (i, yrs) y -> (i + 1, (y, regs.(i)) :: yrs))
       (0, x_reg_cl) ys in
     List.iter
-      (fun (y, r) -> Printf.fprintf oc "\tmr\t%s, %s\n" (reg r) (reg y))
+      (fun (y, r) -> (file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg r) (reg y); address := !address + 1))
       (shuffle reg_sw yrs);
     let (d, zfrs) =
       List.fold_left
 	(fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
 	(0, []) zs in
       List.iter
-        (fun (z, fr) -> Printf.fprintf oc "\tfmr\t%s, %s\n" (reg fr) (reg z))
+        (fun (z, fr) -> (file := !file ^ Printf.sprintf "\tfmr\t%s, %s\n" (reg fr) (reg z); address := !address + 1))
 	(shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
-  Printf.fprintf oc "%s:\n" x;
   stackset := S.empty;
   stackmap := [];
+  Hashtbl.add address_list x !address;
   g oc (Tail, e)
 
 (* let f oc (Prog(data, fundefs, e)) = *)
@@ -282,31 +359,18 @@ let f oc p =
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
-    (Printf.fprintf oc "\t.data\n\t.literal8\n";
+    (file := !file ^ Printf.sprintf "\t.data\n\t.literal8\n";
      List.iter
        (fun (Id.L(x), d) ->
-	 Printf.fprintf oc "\t.align 3\n";
-	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%ld\n" (gethi d);
-	 Printf.fprintf oc "\t.long\t%ld\n" (getlo d))
+	 file := !file ^ Printf.sprintf "\t.align 3\n";
+	 file := !file ^ Printf.sprintf "%s:\t # %f\n" x d;
+	 file := !file ^ Printf.sprintf "\t.long\t%ld\n" (gethi d);
+	 file := !file ^ Printf.sprintf "\t.long\t%ld\n" (getlo d))
        data));
-  Printf.fprintf oc "\t.text\n";
-  Printf.fprintf oc "\t.globl  _min_caml_start\n";
-  Printf.fprintf oc "\t.align 2\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
-  Printf.fprintf oc "_min_caml_start: # main entry point\n";
-  Printf.fprintf oc "\tmflr\tr0\n";
-  Printf.fprintf oc "\tstmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tstw\tr0, 8(r1)\n";
-  Printf.fprintf oc "\tstwu\tr1, -96(r1)\n";
-  Printf.fprintf oc "   # main program start\n";
   stackset := S.empty;
   stackmap := [];
+  print_string ("main entry point address " ^ (string_of_int !address) ^ "\n");
   g oc (NonTail("_R_0"), e);
-  Printf.fprintf oc "   # main program end\n";
-(*  Printf.fprintf oc "\tmr\tr3, %s\n" regs.(0); *)
-  Printf.fprintf oc "\tlwz\tr1, 0(r1)\n";
-  Printf.fprintf oc "\tlwz\tr0, 8(r1)\n";
-  Printf.fprintf oc "\tmtlr\tr0\n";
-  Printf.fprintf oc "\tlmw\tr30, -8(r1)\n";
-  Printf.fprintf oc "\tblr\n"
+  print_string ("all lines " ^ (string_of_int !address) ^ "\n");
+  Printf.fprintf oc "%s" !file
