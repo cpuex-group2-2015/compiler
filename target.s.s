@@ -1,6 +1,3 @@
-	.text
-	.globl  _min_caml_start
-	.align 2
 fib.10:
 	cmpwi	cr7, r2, 1
 	bgt	cr7, ble_else.24
@@ -35,10 +32,6 @@ ble_else.24:
 	add	r2, r5, r2
 	blr
 _min_caml_start: # main entry point
-	mflr	r0
-	stmw	r30, -8(r1)
-	stw	r0, 8(r1)
-	stwu	r1, -96(r1)
    # main program start
 	li	r2, 30
 
@@ -49,10 +42,5 @@ _min_caml_start: # main entry point
 	subi	r3, r3, 8
 	lwz	r31, 4(r3)
 	mtlr	r31
-
    # main program end
-	lwz	r1, 0(r1)
-	lwz	r0, 8(r1)
-	mtlr	r0
-	lmw	r30, -8(r1)
-	blr
+
