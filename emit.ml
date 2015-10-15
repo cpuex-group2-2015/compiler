@@ -7,6 +7,23 @@ let file = ref ""
 let address = ref 0
 let address_list = Hashtbl.create 0
 
+let rec int_to_binary int digit res =
+  if int > 0 then
+    int_to_binary (int / 2) (digit - 1) ((string_of_int (int mod 2)) ^ res)
+  else if digit > 0 then
+    int_to_binary int (digit - 1) ("0" ^ res)
+  else
+    res
+
+let reg_to_binary reg =
+  int_to_binary (int_of_string (String.sub reg 1 (String.length reg - 1))) 5 ""
+
+let int_to_minus_binary int digit =
+  int_to_binary ((int_of_float (2. ** (float_of_int digit))) - int) digit ""
+
+let br_to_binary b = match b with
+  | "bgt" -> "0100000101000000"
+
 let stackset = ref S.empty (* すでに Save された変数の集合 *)
 let stackmap = ref [] (* Save された変数のスタックにおける位置 *)
 let save x =
@@ -60,7 +77,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
     (* 末尾でなかったら計算結果を dest にセット *)
   | (NonTail(_), Nop) -> ()
   | (NonTail(x), Li(i)) when i >= -32768 && i < 32768 ->
-      file := !file ^ Printf.sprintf "\tli\t%s, %d\n" (reg x) i;
+      (*file := !file ^ Printf.sprintf "\tli\t%s, %d\n" (reg x) i;*)
+      file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary i 16 "");
       address := !address + 1
   | (NonTail(x), Li(i)) ->
       let n = i lsr 16 in
@@ -85,7 +103,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "\tneg\t%s, %s\n" (reg x) (reg y);
      address := !address + 1
   | (NonTail(x), Add(y, V(z))) ->
-      file := !file ^ Printf.sprintf "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+      (*file := !file ^ Printf.sprintf "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z);*)
+      file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
       address := !address + 1
   | (NonTail(x), Add(y, C(z))) ->
       file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" (reg x) (reg y) z;
@@ -94,7 +113,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       file := !file ^ Printf.sprintf "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z);
       address := !address + 1
   | (NonTail(x), Sub(y, C(z))) ->
-      file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
+      (*file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;*)
+      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
       address := !address + 1
   | (NonTail(x), Slw(y, V(z))) ->
       file := !file ^ Printf.sprintf "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z);
@@ -152,7 +172,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(_), Save(x, y))
       when List.mem x allregs && not (S.mem y !stackset) ->
       save y;
-	file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+	(*file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;*)
+	file := !file ^ Printf.sprintf "100100%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary reg_sp) (int_to_binary (offset y) 16 "");
 	address := !address + 1
   | (NonTail(_), Save(x, y))
       when List.mem x allfregs && not (S.mem y !stackset) ->
@@ -162,7 +183,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(_), Save(x, y)) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 *)
   | (NonTail(x), Restore(y)) when List.mem x allregs ->
-      file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+      (*file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;*)
+      file := !file ^ Printf.sprintf "100000%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary reg_sp) (int_to_binary (offset y) 16 "");
       address := !address + 1
   | (NonTail(x), Restore(y)) ->
       assert (List.mem x allfregs);
@@ -176,7 +198,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (Tail, (Li _ | SetL _ | Mr _ | Neg _ | Add _ | Sub _ | Slw _ |
             Lwz _ as exp)) ->
       g' oc (NonTail(regs.(0)), exp);
-      file := !file ^ Printf.sprintf "\tblr\n";
+      (*file := !file ^ Printf.sprintf "\tblr\n";*)
+      file := !file ^ Printf.sprintf "01001100000000000000000000000000\n";
       address := !address + 1
   | (Tail, (FLi _ | FMr _ | FNeg _ | FAdd _ | FSub _ | FMul _ | FDiv _ |
             Lfd _ as exp)) ->
@@ -203,7 +226,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       address := !address + 1;
       g'_tail_if oc e1 e2 "ble" "bgt"
   | (Tail, IfLE(x, C(y), e1, e2)) ->
-      file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;
+    (*file := !file ^ Printf.sprintf "\tcmpwi\tcr7, %s, %d\n" (reg x) y;*)
+      file := !file ^ Printf.sprintf "001011%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary y 16 "");
       address := !address + 1;
       g'_tail_if oc e1 e2 "ble" "bgt"
   | (Tail, IfGE(x, V(y), e1, e2)) ->
@@ -286,32 +310,40 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
 	file := !file ^ Printf.sprintf "\tmtlr\t%s\n" reg_tmp;
 	address := !address + 1
   | (NonTail(a), CallDir(Id.L(x), ys, zs)) ->
-      file := !file ^ Printf.sprintf "\tmflr\t%s\n" reg_tmp;
+      (*file := !file ^ Printf.sprintf "\tmflr\t%s\n" reg_tmp;*)
+      file := !file ^ Printf.sprintf "011111%s000000000001010100110\n" (reg_to_binary reg_tmp);
       address := !address + 1;
       g'_args oc [] ys zs;
       let ss = stacksize () in
-	file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
-	file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	file := !file ^ Printf.sprintf "\tbl\t%d\n" (Hashtbl.find address_list x);
-	file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+	(*file := !file ^ Printf.sprintf "\tstw\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;*)
+	file := !file ^ Printf.sprintf "100100%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
+	(*file := !file ^ Printf.sprintf "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;*)
+	file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_binary ss 16 "");
+	(*file := !file ^ Printf.sprintf "\tbl\t%d\n" (Hashtbl.find address_list x);*)
+	file := !file ^ Printf.sprintf "0100101000000000%s\n" (int_to_binary (Hashtbl.find address_list x) 16 "");
+	(*file := !file ^ Printf.sprintf "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;*)
+	file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_minus_binary ss 16);
+	(*file := !file ^ Printf.sprintf "\tlwz\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;*)
+	file := !file ^ Printf.sprintf "100000%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
 	address := !address + 5;
 	(if List.mem a allregs && a <> regs.(0) then
-	  (file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg a) (reg regs.(0));
+	  ((*file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg a) (reg regs.(0));*)
+	   file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg regs.(0))) (reg_to_binary (reg a)) (reg_to_binary (reg regs.(0)));
 	   address := !address + 1)
 	 else if List.mem a allfregs && a <> fregs.(0) then
 	  (file := !file ^ Printf.sprintf "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
 	   address := !address + 1));
-	file := !file ^ Printf.sprintf "\tmtlr\t%s\n" reg_tmp;
+	(*file := !file ^ Printf.sprintf "\tmtlr\t%s\n" reg_tmp;*)
+	file := !file ^ Printf.sprintf "011111%s000000000001110100110\n" (reg_to_binary reg_tmp);
 	address := !address + 1
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
-    file := !file ^ Printf.sprintf "\t%s\tcr7, %s\n" bn b_else;
+    (*file := !file ^ Printf.sprintf "\t%s\tcr7, %s\n" bn b_else;*)
+    file := !file ^ Printf.sprintf "%s%s\n" (br_to_binary bn) b_else;
     address := !address + 1;
     let stackset_back = !stackset in
       g oc (Tail, e1);
-      (*file := !file ^ Printf.sprintf "%s:\n" b_else;*)
-      file := Str.global_replace (Str.regexp b_else) (string_of_int !address) !file;
+      file := Str.global_replace (Str.regexp b_else) (int_to_binary !address 16 "") !file;
       stackset := stackset_back;
       g oc (Tail, e2)
 and g'_non_tail_if oc dest e1 e2 b bn =
@@ -337,7 +369,9 @@ and g'_args oc x_reg_cl ys zs =
       (fun (i, yrs) y -> (i + 1, (y, regs.(i)) :: yrs))
       (0, x_reg_cl) ys in
     List.iter
-      (fun (y, r) -> (file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg r) (reg y); address := !address + 1))
+      (fun (y, r) -> ((*file := !file ^ Printf.sprintf "\tmr\t%s, %s\n" (reg r) (reg y);*)
+		      file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg y)) (reg_to_binary (reg r)) (reg_to_binary (reg y));
+		      address := !address + 1))
       (shuffle reg_sw yrs);
     let (d, zfrs) =
       List.fold_left
@@ -372,5 +406,5 @@ let f oc p =
   stackmap := [];
   print_string ("main entry point address " ^ (string_of_int !address) ^ "\n");
   g oc (NonTail("_R_0"), e);
-  print_string ("all lines " ^ (string_of_int !address) ^ "\n");
+  print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
   Printf.fprintf oc "%s" !file
