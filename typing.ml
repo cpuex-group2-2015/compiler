@@ -209,10 +209,10 @@ and show_syntax_tree indent e =
   | Var(x) ->
      print_string (indent ^ "VAR " ^ x ^ "\n")
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
-     print_string (indent ^ "LETREC " ^ x ^ (arg_list_to_string "" yts) ^ "=\n");
+     print_string (indent ^ "LET REC " ^ x ^ (arg_list_to_string " " yts) ^ "=\n");
      show_syntax_tree (indent ^ "  ") e1;
      print_string (indent ^ "IN\n");
-     show_syntax_tree (indent ^ "  ") e2
+     show_syntax_tree indent e2
   | App(e, es) ->
      print_string (indent ^ "APP\n");
      show_syntax_tree indent e;
@@ -244,7 +244,9 @@ let f e =
 *)
   (try unify Type.Unit (g M.empty e)
   with Unify _ -> failwith "you have to print out something");
-  print_string "Syntax\n";
+  print_string "=======================\n";
+  print_string "\tSyntax\n";
+  print_string "=======================\n";
   show_syntax_tree "\t" e;
   extenv := M.map deref_typ !extenv;
   deref_term e

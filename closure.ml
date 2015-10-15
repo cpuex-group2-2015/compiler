@@ -100,7 +100,86 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2
   | KNormal.ExtArray(x) -> ExtArray(Id.L(x))
   | KNormal.ExtFunApp(x, ys) -> AppDir(Id.L("min_caml_" ^ x), ys)
 
+let rec arg_list_to_string string list =
+  match list with
+  | [] -> string
+  | (x,t)::ys -> arg_list_to_string (string ^ x ^ ":" ^ (Type.type_to_string t) ^ " ") ys
+
+let rec show_content indent t = match t with
+  | Unit -> print_string (indent ^ "()\n")
+  | Int(i) -> print_string (string_of_int i)
+  | Float(f) -> print_string (string_of_float f)
+  | Neg(x) | FNeg(x) -> print_string ("- " ^ x)
+  | Add(x, y) -> print_string (x ^ " + " ^ y)
+  | Sub(x, y) -> print_string (x ^ " - " ^ y)
+  | FAdd(x, y) -> print_string (x ^ " .+ " ^ y)
+  | FSub(x, y) -> print_string (x ^ " .- " ^ y)
+  | FMul(x, y) -> print_string (x ^ " .* " ^ y)
+  | FDiv(x, y) -> print_string (x ^ " ./ " ^ y)
+  | IfEq(x, y, e1, e2) ->
+     print_string (indent ^ "if " ^ x ^ " = " ^ y ^ " then\n");
+     (match e1 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string (indent ^ "  "); show_content "" e1; print_string "\n"
+      | _ -> show_content (indent ^ "  ") e1);
+     print_string (indent ^ "else\n");
+     (match e2 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string (indent ^ "  "); show_content "" e2; print_string "\n"
+      | _ -> show_content (indent ^ "  ") e2)
+  | IfLE(x, y, e1, e2) ->
+     print_string (indent ^ "if " ^ x ^ " < " ^ y ^ " then\n");
+     (match e1 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string (indent ^ "  "); show_content "" e1; print_string "\n"
+      | _ -> show_content (indent ^ "  ") e1);
+     print_string (indent ^ "else\n");
+     (match e2 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string (indent ^ "  "); show_content "" e2; print_string "\n"
+      | _ -> show_content (indent ^ "  ") e2)
+  | Let((x, t), e1, e2) ->
+     print_string (indent ^ "let " ^ x ^ ":" ^ (Type.type_to_string t) ^ " = ");
+     (match e1 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        show_content "" e1; print_string " in\n"
+      | _ -> print_string "\n"; show_content (indent ^ "  ") e1; print_string (indent ^ "in\n"));
+     (match e2 with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string indent; show_content "" e2; print_string "\n"
+      | _ -> show_content indent e2)
+  | Var(x) -> print_string x
+  | MakeCls((x, t), { entry=Id.L(l); actual_fv=xs }, body) ->
+     print_string (indent ^ "make_closure " ^ x ^ ":" ^ (Type.type_to_string t) ^ "=(" ^ l ^ ",(" ^ (String.concat "," xs) ^ ")) in\n");
+     show_content (indent ^ "  ") body
+  | AppCls(x, ys) -> print_string ("apply_closure(" ^ x ^ ", " ^ (String.concat "," ys) ^ ")")
+  | AppDir(Id.L(l), ys) -> print_string ("apply_direct(" ^ l ^ ", " ^ (String.concat "," ys) ^ ")")
+  | Tuple(xs) -> print_string ("(" ^ (String.concat "," xs) ^ ")")
+  | LetTuple(args, x, e) ->
+     print_string (indent ^ "let (" ^ (arg_list_to_string "" args) ^ ") = " ^ x ^ " in\n");
+     show_content (indent ^ "  ") e
+  | Get(x, y) -> print_string (x ^ ".(" ^ y ^ ")")
+  | Put(x, y, z) -> print_string (x ^ ".(" ^ y ^ ") <- " ^ z)
+  | ExtArray(Id.L(l)) -> print_string (indent ^ "ExtArray " ^ l ^ "\n")
+
+let show_fundef { name = (Id.L(x), t); args = args; formal_fv = fvs; body } =
+  print_string ("\tFunction " ^ x ^ " (" ^ (arg_list_to_string " "args) ^ ") =" ^ (Type.type_to_string t) ^ "\n");
+  print_string ("\t  Free variables: (" ^ (arg_list_to_string " " fvs) ^ ")\n");
+  show_content "\t  " body
+
+let show_prog (Prog(fs, body)) =
+  print_string "\t-----Top Level Functions-----\n";
+  List.iter show_fundef fs;
+  print_string "\t-----Main Routine-----\n";
+  show_content "\t" body;
+  print_string "=======================\n"
+
 let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
-  Prog(List.rev !toplevel, e')
+  let tmp = Prog(List.rev !toplevel, e') in
+  print_string "=======================\n";
+  print_string "\tClosure.Prog\n";
+  print_string "=======================\n";
+  show_prog tmp;
+  tmp

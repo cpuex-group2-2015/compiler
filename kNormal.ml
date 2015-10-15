@@ -49,6 +49,11 @@ let insert_let (e, t) k = (* letを挿入する補助関数 (caml2html: knormal_
       let e', t' = k x in
       Let((x, t), e, e'), t'
 
+let rec arg_list_to_string string list =
+  match list with
+  | [] -> string
+  | (x,_)::ys -> arg_list_to_string (string ^ x ^ " ") ys
+
 let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
   | Syntax.Unit -> Unit, Type.Unit
   | Syntax.Bool(b) -> Int(if b then 1 else 0), Type.Int (* 論理値true, falseを整数1, 0に変換 (caml2html: knormal_bool) *)
@@ -195,13 +200,13 @@ let rec show_knormal indent e =
   | FMul(e1, e2) -> print_string (indent ^ "FMUL " ^ e1 ^ " " ^ e2 ^ "\n")
   | FDiv(e1, e2) -> print_string (indent ^ "FDIV " ^ e1 ^ " " ^ e2 ^ "\n")
   | IfEq(s1, s2, e1, e2) ->
-     print_string (indent ^ "IFEQ " ^ s1 ^ " " ^ s2 ^ "\n");
+     print_string (indent ^ "IF " ^ s1 ^ " = " ^ s2 ^ "\n");
      print_string (indent ^ "THEN\n");
      show_knormal (indent ^ "  ") e1;
      print_string (indent ^ "ELSE\n");
      show_knormal (indent ^ "  ") e2
   | IfLE(s1, s2, e1, e2) ->
-     print_string (indent ^ "IFLE " ^ s1 ^ " " ^ s2 ^ "\n");
+     print_string (indent ^ "IF " ^ s1 ^ " < " ^ s2 ^ "\n");
      print_string (indent ^ "THEN\n");
      show_knormal (indent ^ "  ") e1;
      print_string (indent ^ "ELSE\n");
@@ -212,12 +217,18 @@ let rec show_knormal indent e =
      print_string (indent ^ "IN\n");
      show_knormal indent e2
   | Var(v) -> print_string (indent ^ "VAR " ^ v ^ "\n")
-  | LetRec(_,_) -> print_string (indent ^ "LETREC\n")
+  | LetRec({ name = (x, t); args = args; body = e1 }, e2) ->
+     print_string (indent ^ "LET REC " ^ x ^ (arg_list_to_string " " args) ^ "=\n");
+     show_knormal (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_knormal indent e2;
   | App(e, es) ->
      print_string (indent ^ "APP " ^ e ^ " " ^ (str_list_to_str "" es) ^ "\n")
   | Tuple(es) ->
      print_string (indent ^ "TUPLE " ^ (str_list_to_str "" es) ^ "\n")
-  | LetTuple(_,_,_) -> print_string (indent ^ "LETTUPLE")
+  | LetTuple(args,tuple,e) ->
+     print_string (indent ^ "LET TUPLE" ^ (arg_list_to_string " " args) ^ "= " ^ tuple ^ "IN\n");
+     show_knormal (indent ^ "  ") e
   | Get(e1, e2) -> print_string (indent ^ "GET " ^ e1 ^ " " ^ e2 ^ "\n")
   | Put(e1, e2, e3) -> print_string (indent ^ "PUT " ^ e1 ^ " " ^ e2 ^ " " ^ e3 ^"\n")
   | ExtArray(e) -> print_string (indent ^ "EXTARRAY " ^ e ^ "\n")
@@ -238,14 +249,14 @@ let rec delete_duplication list e =
 
 let f e =
   let tmp = fst (g M.empty e) in
+(*  print_string "=======================\n";
+  print_string "\tKNormal\n";
   print_string "=======================\n";
-  print_string "KNormal\n";
-  print_string "=======================\n";
-  show_knormal "  " tmp;
+  show_knormal "\t" tmp;*)
   let list = Hashtbl.create 0 in
   let res = delete_duplication list tmp in
   print_string "=======================\n";
-  print_string "Delete Duplication\n";
+  print_string "\tDelete Duplication\n";
   print_string "=======================\n";
-  show_knormal "  " res;
+  show_knormal "\t" res;
   res
