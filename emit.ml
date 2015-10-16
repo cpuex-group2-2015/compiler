@@ -24,6 +24,21 @@ let int_to_minus_binary int digit =
 let br_to_binary b = match b with
   | "bgt" -> "0100000101000000"
 
+let byte_to_int s =
+  128 * (int_of_char s.[0] - 48) +
+  64 * (int_of_char s.[1] - 48) +
+  32 * (int_of_char s.[2] - 48) +
+  16 * (int_of_char s.[3] - 48) +
+  8 * (int_of_char s.[4] - 48) +
+  4 * (int_of_char s.[5] - 48) +
+  2 * (int_of_char s.[6] - 48) +
+  (int_of_char s.[7] - 48)
+
+let rec write_byte oc str=
+  if str <> "" then
+   (output_byte oc (byte_to_int (Str.string_before str 8));
+    write_byte oc (Str.string_after str 8))
+
 let stackset = ref S.empty (* すでに Save された変数の集合 *)
 let stackmap = ref [] (* Save された変数のスタックにおける位置 *)
 let save x =
@@ -389,7 +404,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 (* let f oc (Prog(data, fundefs, e)) = *)
 let f oc p =
-  show_asm_prog "  " p;
+  (*show_asm_prog "  " p;*)
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
@@ -408,4 +423,4 @@ let f oc p =
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
   file := !file ^ Printf.sprintf "11111111111111111111111111111111\n";
-  Printf.fprintf oc "%s" !file
+  write_byte oc (Str.global_replace (Str.regexp "\n") "" !file)

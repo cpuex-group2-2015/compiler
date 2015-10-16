@@ -157,7 +157,10 @@ let rec show_content indent t = match t with
   | Tuple(xs) -> print_string ("(" ^ (String.concat "," xs) ^ ")")
   | LetTuple(args, x, e) ->
      print_string (indent ^ "let (" ^ (arg_list_to_string "" args) ^ ") = " ^ x ^ " in\n");
-     show_content (indent ^ "  ") e
+     (match e with
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+        print_string indent; show_content "" e; print_string "\n"
+      | _ -> show_content (indent ^ "  ") e)
   | Get(x, y) -> print_string (x ^ ".(" ^ y ^ ")")
   | Put(x, y, z) -> print_string (x ^ ".(" ^ y ^ ") <- " ^ z)
   | ExtArray(Id.L(l)) -> print_string (indent ^ "ExtArray " ^ l ^ "\n")
@@ -165,7 +168,10 @@ let rec show_content indent t = match t with
 let show_fundef { name = (Id.L(x), t); args = args; formal_fv = fvs; body } =
   print_string ("\tFunction " ^ x ^ " (" ^ (arg_list_to_string " "args) ^ ") =" ^ (Type.type_to_string t) ^ "\n");
   print_string ("\t  Free variables: (" ^ (arg_list_to_string " " fvs) ^ ")\n");
-  show_content "\t  " body
+  (match body with
+   | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+     print_string "\t  "; show_content "" body; print_string "\n"
+   | _ -> show_content "\t  " body)
 
 let show_prog (Prog(fs, body)) =
   print_string "\t-----Top Level Functions-----\n";
@@ -177,9 +183,9 @@ let show_prog (Prog(fs, body)) =
 let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
-  let tmp = Prog(List.rev !toplevel, e') in
+  let res = Prog(List.rev !toplevel, e') in
   print_string "=======================\n";
   print_string "\tClosure.Prog\n";
   print_string "=======================\n";
-  show_prog tmp;
-  tmp
+  show_prog res;
+  res

@@ -255,8 +255,8 @@ let f e =
   show_knormal "\t" tmp;*)
   let list = Hashtbl.create 0 in
   let res = delete_duplication list tmp in
-  print_string "=======================\n";
+(*  print_string "=======================\n";
   print_string "\tDelete Duplication\n";
   print_string "=======================\n";
-  show_knormal "\t" res;
+  show_knormal "\t" res;*)
   res

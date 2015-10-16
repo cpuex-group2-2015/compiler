@@ -244,9 +244,9 @@ let f e =
 *)
   (try unify Type.Unit (g M.empty e)
   with Unify _ -> failwith "you have to print out something");
-  print_string "=======================\n";
+  (*print_string "=======================\n";
   print_string "\tSyntax\n";
   print_string "=======================\n";
-  show_syntax_tree "\t" e;
+  show_syntax_tree "\t" e;*)
   extenv := M.map deref_typ !extenv;
   deref_term e
