@@ -257,5 +257,5 @@ min_caml_fnegd:
 	.long	0
 	.long	0
 .globl min_caml_hp
-min_caml_hp:	
+min_caml_hp:
 	.long	0x0

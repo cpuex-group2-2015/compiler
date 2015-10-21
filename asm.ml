@@ -204,10 +204,14 @@ let rec print_prog_fundefs fundefs = match fundefs with
 (* show_asm_prog : string -> prog -> unit *)
 let show_asm_prog indent p =
   let Prog(datas, fundefs, e) = p in
+  print_string "=======================\n";
+  print_string "\tAsm.Prog\n";
+  print_string "=======================\n";
   print_string "\tshowing asm prog structure...\n";
   print_string "\tstarted printing datas...\n";
   print_prog_datas datas;
   print_string "\tstarted printing fundefs...\n";
   print_prog_fundefs fundefs;
   print_string "\tstarted printing asm t...\n";
-  print_asm_t (indent ^ "\t") e
+  print_asm_t (indent ^ "\t") e;
+  print_string "=======================\n"
