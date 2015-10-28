@@ -184,8 +184,8 @@ let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
   let res = Prog(List.rev !toplevel, e') in
-  print_string "=======================\n";
+(*  print_string "=======================\n";
   print_string "\tClosure.Prog\n";
   print_string "=======================\n";
-  show_prog res;
+  show_prog res;*)
   res

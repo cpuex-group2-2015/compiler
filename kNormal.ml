@@ -238,18 +238,21 @@ let rec show_knormal indent e =
 let rec delete_duplication list e =
   match e with
   | Let((x, t), e1, e2) ->
-    (try
-       let r = Hashtbl.find list e1 in
-       Let((x, t), Var(r), (delete_duplication list e2))
-     with
+    (match e1 with
+     | ExtFunApp(_, _) | ExtArray(_) -> e
      | _ ->
-        Hashtbl.add list e1 x;
-	Let((x, t), e1, (delete_duplication list e2)))
+        (try
+           let r = Hashtbl.find list e1 in
+           Let((x, t), Var(r), (delete_duplication list e2))
+         with
+         | _ ->
+            Hashtbl.add list e1 x;
+	    Let((x, t), e1, (delete_duplication list e2))))
   | _ -> e
 
 let f e =
   let tmp = fst (g M.empty e) in
-(*print_string "=======================\n";
+  (*print_string "=======================\n";
   print_string "\tKNormal\n";
   print_string "=======================\n";
   show_knormal "\t" tmp;

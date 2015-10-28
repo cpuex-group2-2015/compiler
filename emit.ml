@@ -451,6 +451,7 @@ and g'_args oc x_reg_cl ys zs =
 	(shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
+  Printf.fprintf oc "%s:\n" x;
   stackset := S.empty;
   stackmap := [];
   Hashtbl.add address_list x !address;
@@ -474,6 +475,7 @@ let f oc bc p =
   stackset := S.empty;
   stackmap := [];
   print_string ("main entry point address " ^ (string_of_int !address) ^ "\n");
+  Printf.fprintf oc "# main entry point\n";
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
   file := !file ^ Printf.sprintf "11111111111111111111111111111111\n";

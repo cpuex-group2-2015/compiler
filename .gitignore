@@ -1,7 +1,8 @@
 .DS_Store
-/target.ml
-/target.s
-/target.bin
 target.ml
 target.s
 target.bin
+
+fib.ml
+fib.s
+fib.bin
