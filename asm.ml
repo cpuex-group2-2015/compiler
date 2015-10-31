@@ -14,6 +14,8 @@ and exp = (* 一つ一つの命令に対応する式 *)
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * id_or_imm
+  | Mul of Id.t * id_or_imm
+  | Div of Id.t * id_or_imm
   | Slw of Id.t * id_or_imm
   | Lwz of Id.t * id_or_imm
   | Stw of Id.t * Id.t * id_or_imm
@@ -80,7 +82,7 @@ let fv_id_or_imm = function V (x) -> [x] | _ -> []
 let rec fv_exp = function
   | Nop | Li (_) | FLi (_) | SetL (_) | Comment (_) | Restore (_) -> []
   | Mr (x) | Neg (x) | FMr (x) | FNeg (x) | Save (x, _) -> [x]
-  | Add (x, y') | Sub (x, y') | Slw (x, y') | Lfd (x, y') | Lwz (x, y') ->
+  | Add (x, y') | Sub (x, y') | Mul (x, y') | Div (x, y') | Slw (x, y') | Lfd (x, y') | Lwz (x, y') ->
       x :: fv_id_or_imm y'
   | FAdd (x, y) | FSub (x, y) | FMul (x, y) | FDiv (x, y) ->
       [x; y]
@@ -139,6 +141,8 @@ and print_asm_exp indent exp = match exp with
   | Neg (t) -> print_string (indent ^ "Neg " ^ t ^ "\n")
   | Add (t, i) -> print_string (indent ^ "Add " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
   | Sub (t, i) -> print_string (indent ^ "Sub " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Mul (t, i) -> print_string (indent ^ "Mul " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
+  | Div (t, i) -> print_string (indent ^ "Div " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
   | Slw (t, i) -> print_string (indent ^ "Slw " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
   | Lwz (t, i) -> print_string (indent ^ "Lwz " ^ t ^ " " ^ (id_or_imm_to_string i) ^ "\n")
   | Stw (t1, t2, i) -> print_string (indent ^ "Stw " ^ t1 ^ " " ^ t2 ^ " " ^ (id_or_imm_to_string i) ^ "\n")

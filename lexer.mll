@@ -38,6 +38,10 @@ rule token = parse
     { MINUS }
 | '+' (* +.より後回しにしなくても良い? 最長一致? *)
     { PLUS }
+| '*'
+    { AST }
+| "/"
+    { SLASH }
 | "-."
     { MINUS_DOT }
 | "+."
@@ -76,6 +80,8 @@ rule token = parse
     { IDENT(Id.gentmp Type.Unit) }
 | "Array.create" (* [XX] ad hoc *)
     { ARRAY_CREATE }
+| "create_array"
+    { ARRAY_CREATE }
 | '.'
     { DOT }
 | "<-"
@@ -95,6 +101,7 @@ rule token = parse
 	  let startpos = startp.pos_cnum - startp.pos_bol in
 	  let endl = endp.pos_lnum in
 	  let endpos = endp.pos_cnum - endp.pos_bol in
+	  print_string ( (Lexing.lexeme lexbuf) ^ "\n" );
 	  Printf.sprintf "Unknown token from line %d characters %d to line %d characters %d" startl startpos endl endpos
 	  (*Printf.sprintf "unknown token %s near characters %d-%d"
 	   (Lexing.lexeme lexbuf)

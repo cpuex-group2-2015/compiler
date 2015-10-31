@@ -10,7 +10,6 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *
 let lexbuf outchan binchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  (* Typing.show_token Lexer.token l; *)
   Emit.f outchan binchan
     (RegAlloc.f
       (Simm.f

@@ -6,6 +6,8 @@ type t = (* クロージャ変換後の式 (caml2html: closure_t) *)
   | Neg of Id.t
   | Add of Id.t * Id.t
   | Sub of Id.t * Id.t
+  | Mul of Id.t * Id.t
+  | Div of Id.t * Id.t
   | FNeg of Id.t
   | FAdd of Id.t * Id.t
   | FSub of Id.t * Id.t
@@ -32,7 +34,7 @@ type prog = Prog of fundef list * t
 let rec fv = function
   | Unit | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x) | FNeg(x) -> S.singleton x
-  | Add(x, y) | Sub(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
+  | Add(x, y) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAdd(x, y) | FSub(x, y) | FMul(x, y) | FDiv(x, y) | Get(x, y) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2)| IfLE(x, y, e1, e2) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x) -> S.singleton x
@@ -51,6 +53,8 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2
   | KNormal.Neg(x) -> Neg(x)
   | KNormal.Add(x, y) -> Add(x, y)
   | KNormal.Sub(x, y) -> Sub(x, y)
+  | KNormal.Mul(x, y) -> Mul(x, y)
+  | KNormal.Div(x, y) -> Div(x, y)
   | KNormal.FNeg(x) -> FNeg(x)
   | KNormal.FAdd(x, y) -> FAdd(x, y)
   | KNormal.FSub(x, y) -> FSub(x, y)
@@ -112,6 +116,8 @@ let rec show_content indent t = match t with
   | Neg(x) | FNeg(x) -> print_string ("- " ^ x)
   | Add(x, y) -> print_string (x ^ " + " ^ y)
   | Sub(x, y) -> print_string (x ^ " - " ^ y)
+  | Mul(x, y) -> print_string (x ^ " * " ^ y)
+  | Div(x, y) -> print_string (x ^ " / " ^ y)
   | FAdd(x, y) -> print_string (x ^ " .+ " ^ y)
   | FSub(x, y) -> print_string (x ^ " .- " ^ y)
   | FMul(x, y) -> print_string (x ^ " .* " ^ y)
@@ -119,33 +125,33 @@ let rec show_content indent t = match t with
   | IfEq(x, y, e1, e2) ->
      print_string (indent ^ "if " ^ x ^ " = " ^ y ^ " then\n");
      (match e1 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string (indent ^ "  "); show_content "" e1; print_string "\n"
       | _ -> show_content (indent ^ "  ") e1);
      print_string (indent ^ "else\n");
      (match e2 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string (indent ^ "  "); show_content "" e2; print_string "\n"
       | _ -> show_content (indent ^ "  ") e2)
   | IfLE(x, y, e1, e2) ->
      print_string (indent ^ "if " ^ x ^ " < " ^ y ^ " then\n");
      (match e1 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string (indent ^ "  "); show_content "" e1; print_string "\n"
       | _ -> show_content (indent ^ "  ") e1);
      print_string (indent ^ "else\n");
      (match e2 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string (indent ^ "  "); show_content "" e2; print_string "\n"
       | _ -> show_content (indent ^ "  ") e2)
   | Let((x, t), e1, e2) ->
      print_string (indent ^ "let " ^ x ^ ":" ^ (Type.type_to_string t) ^ " = ");
      (match e1 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         show_content "" e1; print_string " in\n"
       | _ -> print_string "\n"; show_content (indent ^ "  ") e1; print_string (indent ^ "in\n"));
      (match e2 with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string indent; show_content "" e2; print_string "\n"
       | _ -> show_content indent e2)
   | Var(x) -> print_string x
@@ -158,7 +164,7 @@ let rec show_content indent t = match t with
   | LetTuple(args, x, e) ->
      print_string (indent ^ "let (" ^ (arg_list_to_string "" args) ^ ") = " ^ x ^ " in\n");
      (match e with
-      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+      | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
         print_string indent; show_content "" e; print_string "\n"
       | _ -> show_content (indent ^ "  ") e)
   | Get(x, y) -> print_string (x ^ ".(" ^ y ^ ")")
@@ -169,7 +175,7 @@ let show_fundef { name = (Id.L(x), t); args = args; formal_fv = fvs; body } =
   print_string ("\tFunction " ^ x ^ " (" ^ (arg_list_to_string " "args) ^ ") =" ^ (Type.type_to_string t) ^ "\n");
   print_string ("\t  Free variables: (" ^ (arg_list_to_string " " fvs) ^ ")\n");
   (match body with
-   | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
+   | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) ->
      print_string "\t  "; show_content "" body; print_string "\n"
    | _ -> show_content "\t  " body)
 

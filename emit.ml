@@ -22,7 +22,10 @@ let int_to_minus_binary int digit =
   int_to_binary ((int_of_float (2. ** (float_of_int digit))) - int) digit ""
 
 let br_to_binary b = match b with
+  | "blt" -> "0100000100000000";
   | "bgt" -> "0100000101000000";
+  | "beq" -> "0100000110000000";
+  | "bne" -> "0100000010000000";
   | x -> failwith ("branch_to_binary failed with " ^ x)
 
 let byte_to_int s =
@@ -134,6 +137,14 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
      address := !address + 4
+  | (NonTail(x), Mul(y, V(z))) ->
+     print_string "\thooray\n"
+  | (NonTail(x), Mul(y, C(z))) ->
+     print_string "\thooray\n"
+  | (NonTail(x), Div(y, V(z))) ->
+     print_string "\thooray\n"
+  | (NonTail(x), Div(y, C(z))) ->
+     print_string "\thooray\n"
   | (NonTail(x), Slw(y, V(z))) ->
      Printf.fprintf oc "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(x), Slw(y, C(z))) ->
@@ -227,7 +238,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      Printf.fprintf oc "\tblr\n";
      file := !file ^ Printf.sprintf "01001100000000000000000000000000\n";
      address := !address + 4
-  | (Tail, (Li _ | SetL _ | Mr _ | Neg _ | Add _ | Sub _ | Slw _ |
+  | (Tail, (Li _ | SetL _ | Mr _ | Neg _ | Add _ | Sub _ | Mul _ | Slw _ |
             Lwz _ as exp)) ->
      g' oc (NonTail(regs.(0)), exp);
      Printf.fprintf oc "\tblr\n";

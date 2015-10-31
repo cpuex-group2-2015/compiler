@@ -6,6 +6,97 @@ open Parser
 exception Unify of Type.t * Type.t
 exception Error of t * Type.t * Type.t
 
+let rec arg_list_to_string string list =
+  match list with
+  | [] -> string
+  | (x,_)::ys -> arg_list_to_string (string ^ x ^ " ") ys
+
+let rec show_syntax_trees indent list =
+  match list with
+  | [] -> ()
+  | t::ys -> show_syntax_tree indent t; show_syntax_trees indent ys
+and show_syntax_tree indent e =
+  match e with
+  | Unit -> print_string (indent ^ "UNIT\n")
+  | Bool(b) -> print_string (indent ^ "BOOL "); Printf.printf "%B\n" (b)
+  | Int(i) -> print_string (indent ^ "INT "); Printf.printf "%i\n" (i)
+  | Float(f) -> print_string (indent ^ "FLOAT "); Printf.printf "%F\n" (f)
+  | Not(e) -> print_string (indent ^ "NOT\n"); show_syntax_tree (indent ^ "  ") e
+  | Neg(e) -> print_string (indent ^ "NEG\n"); show_syntax_tree (indent ^ "  ") e
+  | Add(e1, e2) ->
+     print_string (indent ^ "ADD\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Sub(e1, e2) ->
+     print_string (indent ^ "SUB\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Mul(e1, e2) ->
+     print_string (indent ^ "MUL\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Div(e1, e2) ->
+     print_string (indent ^ "Div\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FNeg(e) ->
+     print_string (indent ^ "FNEG\n");
+     show_syntax_tree (indent ^ "  ") e
+  | FAdd(e1, e2) ->
+     print_string (indent ^ "FADD\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FSub(e1, e2) ->
+     print_string (indent ^ "FSUB\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FMul(e1, e2) ->
+     print_string (indent ^ "FMUL\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | FDiv(e1, e2) ->
+     print_string (indent ^ "FDIV\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Eq(e1, e2) ->
+     print_string (indent ^ "EQ\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | LE(e1, e2) ->
+     print_string (indent ^ "LE\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | If(e1, e2, e3) ->
+     print_string (indent ^ "IF\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "THEN\n");
+     show_syntax_tree (indent ^ "  ") e2;
+     print_string (indent ^ "ELSE\n");
+     show_syntax_tree (indent ^ "  ") e3
+  | Let((x, t), e1, e2) ->
+     print_string (indent ^ "LET " ^ x ^ " =\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree indent e2
+  | Var(x) ->
+     print_string (indent ^ "VAR " ^ x ^ "\n")
+  | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
+     print_string (indent ^ "LET REC " ^ x ^ (arg_list_to_string " " yts) ^ "=\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree indent e2
+  | App(e, es) ->
+     print_string (indent ^ "APP\n");
+     show_syntax_tree indent e;
+     show_syntax_trees (indent ^ "  ") es
+  | Tuple(es) ->
+     print_string (indent ^ "TUPLE\n");
+     show_syntax_trees (indent ^ "  ") es
+  | LetTuple(xts, e1, e2) ->
+     print_string (indent ^ "LETTUPLE ( " ^ (arg_list_to_string "" xts) ^ ") =\n");
+     show_syntax_tree (indent ^ "  ") e1;
+     print_string (indent ^ "IN\n");
+     show_syntax_tree (indent ^ "  ") e2
+  | Array(e1, e2) ->
+     print_string (indent ^ "ARRAY\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Get(e1, e2) ->
+     print_string (indent ^ "GET\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2]
+  | Put(e1, e2, e3) ->
+     print_string (indent ^ "PUT\n");
+     show_syntax_trees (indent ^ "  ") [e1; e2; e3]
+
 let extenv = ref M.empty
 
 (* for pretty printing (and type normalization) *)
@@ -28,6 +119,8 @@ let rec deref_term = function
   | Neg(e) -> Neg(deref_term e)
   | Add(e1, e2) -> Add(deref_term e1, deref_term e2)
   | Sub(e1, e2) -> Sub(deref_term e1, deref_term e2)
+  | Mul(e1, e2) -> Mul(deref_term e1, deref_term e2)
+  | Div(e1, e2) -> Div(deref_term e1, deref_term e2)
   | Eq(e1, e2) -> Eq(deref_term e1, deref_term e2)
   | LE(e1, e2) -> LE(deref_term e1, deref_term e2)
   | FNeg(e) -> FNeg(deref_term e)
@@ -94,7 +187,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Neg(e) ->
 	unify Type.Int (g env e);
 	Type.Int
-    | Add(e1, e2) | Sub(e1, e2) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
+    | Add(e1, e2) | Sub(e1, e2) | Mul(e1, e2) | Div(e1, e2) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
 	unify Type.Int (g env e1);
 	unify Type.Int (g env e2);
 	Type.Int
@@ -149,121 +242,24 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 	unify (Type.Array(t)) (g env e1);
 	unify Type.Int (g env e2);
 	Type.Unit
-  with Unify(t1, t2) -> raise (Error(deref_term e, deref_typ t1, deref_typ t2))
-
-let rec arg_list_to_string string list =
-  match list with
-  | [] -> string
-  | (x,_)::ys -> arg_list_to_string (string ^ x ^ " ") ys
-
-let rec show_syntax_trees indent list =
-  match list with
-  | [] -> ()
-  | t::ys -> show_syntax_tree indent t; show_syntax_trees indent ys
-and show_syntax_tree indent e =
-  match e with
-  | Unit -> print_string (indent ^ "UNIT\n")
-  | Bool(b) -> print_string (indent ^ "BOOL "); Printf.printf "%B\n" (b)
-  | Int(i) -> print_string (indent ^ "INT "); Printf.printf "%i\n" (i)
-  | Float(f) -> print_string (indent ^ "FLOAT "); Printf.printf "%F\n" (f)
-  | Not(e) -> print_string (indent ^ "NOT\n"); show_syntax_tree (indent ^ "  ") e
-  | Neg(e) -> print_string (indent ^ "NEG\n"); show_syntax_tree (indent ^ "  ") e
-  | Add(e1, e2) ->
-     print_string (indent ^ "ADD\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | Sub(e1, e2) ->
-     print_string (indent ^ "SUB\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | FNeg(e) ->
-     print_string (indent ^ "FNEG\n");
-     show_syntax_tree (indent ^ "  ") e
-  | FAdd(e1, e2) ->
-     print_string (indent ^ "FADD\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | FSub(e1, e2) ->
-     print_string (indent ^ "FSUB\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | FMul(e1, e2) ->
-     print_string (indent ^ "FMUL\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | FDiv(e1, e2) ->
-     print_string (indent ^ "FDIV\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | Eq(e1, e2) ->
-     print_string (indent ^ "EQ\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | LE(e1, e2) ->
-     print_string (indent ^ "LE\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | If(e1, e2, e3) ->
-     print_string (indent ^ "IF\n");
-     show_syntax_tree (indent ^ "  ") e1;
-     print_string (indent ^ "THEN\n");
-     show_syntax_tree (indent ^ "  ") e2;
-     print_string (indent ^ "ELSE\n");
-     show_syntax_tree (indent ^ "  ") e3
-  | Let((x, t), e1, e2) ->
-     print_string (indent ^ "LET " ^ x ^ " =\n");
-     show_syntax_tree (indent ^ "  ") e1;
-     print_string (indent ^ "IN\n");
-     show_syntax_tree indent e2
-  | Var(x) ->
-     print_string (indent ^ "VAR " ^ x ^ "\n")
-  | LetRec({ name = (x, t); args = yts; body = e1 }, e2) ->
-     print_string (indent ^ "LET REC " ^ x ^ (arg_list_to_string " " yts) ^ "=\n");
-     show_syntax_tree (indent ^ "  ") e1;
-     print_string (indent ^ "IN\n");
-     show_syntax_tree indent e2
-  | App(e, es) ->
-     print_string (indent ^ "APP\n");
-     show_syntax_tree indent e;
-     show_syntax_trees (indent ^ "  ") es
-  | Tuple(es) ->
-     print_string (indent ^ "TUPLE\n");
-     show_syntax_trees (indent ^ "  ") es
-  | LetTuple(xts, e1, e2) ->
-     print_string (indent ^ "LETTUPLE ( " ^ (arg_list_to_string "" xts) ^ ") =\n");
-     show_syntax_tree (indent ^ "  ") e1;
-     print_string (indent ^ "IN\n");
-     show_syntax_tree (indent ^ "  ") e2
-  | Array(e1, e2) ->
-     print_string (indent ^ "ARRAY\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | Get(e1, e2) ->
-     print_string (indent ^ "GET\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2]
-  | Put(e1, e2, e3) ->
-     print_string (indent ^ "PUT\n");
-     show_syntax_trees (indent ^ "  ") [e1; e2; e3]
+  with Unify(t1, t2) ->
+    raise (Error(deref_term e, deref_typ t1, deref_typ t2))
 
 let f e =
   extenv := M.empty;
+(*print_string "=======================\n";
+  print_string "\tSyntax\n";
+  print_string "=======================\n";
+  show_syntax_tree "\t" e; *)
 (*
   (match deref_typ (g M.empty e) with
   | Type.Unit -> ()
   | _ -> Format.eprintf "warning: final result does not have type unit@.");
 *)
   (try unify Type.Unit (g M.empty e)
-  with Unify _ -> failwith "you have to print out something");
-  print_string "=======================\n";
-  print_string "\tSyntax\n";
-  print_string "=======================\n";
-  show_syntax_tree "\t" e;
+  with
+    Unify _ ->
+    (try unify Type.Int (g M.empty e)
+     with Unify _ -> failwith "you have to print out something"));
   extenv := M.map deref_typ !extenv;
   deref_term e
-
-let show_token f l =
-  let t = f l in
-  match t with
-  | BOOL(b) -> print_string "bool\n";
-  | INT(i) -> print_string "int\n";
-  | FLOAT(f) -> print_string "float\n";
-  | NOT -> print_string "not\n";
-  | MINUS -> print_string "minus\n";
-  | PLUS -> print_string "plus\n";
-  | MINUS_DOT -> print_string "minus_dot\n";
-  | PLUS_DOT -> print_string "plus_dot\n";
-  | AST_DOT -> print_string "ast_dot\n";
-  | SLASH_DOT -> print_string "slash_dot\n";
-  | EQUAL -> print_string "equal\n";
-  | _ -> print_string "others\n"
