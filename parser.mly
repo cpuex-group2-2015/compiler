@@ -1,6 +1,7 @@
 %{
 (* parserが利用する変数、関数、型などの定義 *)
 open Syntax
+open Lexing
 let addtyp x = (x, Type.gentyp ())
 %}
 
@@ -136,7 +137,7 @@ exp: /* (* 一般の式 (caml2html: parser_exp) *) */
 | error
     { failwith
 	(let startp = Parsing.symbol_start_pos () in
-         let endp = Parsing.symbol_start_pos () in
+         let endp = Parsing.symbol_end_pos () in
 	 let startl = startp.pos_lnum in
 	 let endl = endp.pos_lnum in
 	 let startpos = startp.pos_cnum - startp.pos_bol in

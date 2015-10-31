@@ -1,6 +1,7 @@
 (* type inference/reconstruction *)
 
 open Syntax
+open Parser
 
 exception Unify of Type.t * Type.t
 exception Error of t * Type.t * Type.t
@@ -244,9 +245,25 @@ let f e =
 *)
   (try unify Type.Unit (g M.empty e)
   with Unify _ -> failwith "you have to print out something");
-  (*print_string "=======================\n";
+  print_string "=======================\n";
   print_string "\tSyntax\n";
   print_string "=======================\n";
-  show_syntax_tree "\t" e;*)
+  show_syntax_tree "\t" e;
   extenv := M.map deref_typ !extenv;
   deref_term e
+
+let show_token f l =
+  let t = f l in
+  match t with
+  | BOOL(b) -> print_string "bool\n";
+  | INT(i) -> print_string "int\n";
+  | FLOAT(f) -> print_string "float\n";
+  | NOT -> print_string "not\n";
+  | MINUS -> print_string "minus\n";
+  | PLUS -> print_string "plus\n";
+  | MINUS_DOT -> print_string "minus_dot\n";
+  | PLUS_DOT -> print_string "plus_dot\n";
+  | AST_DOT -> print_string "ast_dot\n";
+  | SLASH_DOT -> print_string "slash_dot\n";
+  | EQUAL -> print_string "equal\n";
+  | _ -> print_string "others\n"

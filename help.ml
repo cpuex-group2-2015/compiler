@@ -1,0 +1,10 @@
+let create_array a b = Array.make a b;;
+let fiszero x = true;;
+let fispos x = true;;
+let fisneg x = true;;
+let fneg x = x;;
+let fsqr x = x;;
+let fless x y = true;;
+let fabs x = x;;
+let fhalf x = x;;
+let print_char x = print_int x;;

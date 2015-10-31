@@ -2,6 +2,7 @@
 (* lexerが利用する変数、関数、型などの定義 *)
 open Parser
 open Type
+open Lexing
 }
 
 (* 正規表現の略記 *)
@@ -87,10 +88,19 @@ rule token = parse
     { IDENT(Lexing.lexeme lexbuf) }
 | _
     { failwith
-	(Printf.sprintf "unknown token %s near characters %d-%d"
+	(
+	  let startp = Lexing.lexeme_start_p lexbuf in
+	  let endp = Lexing.lexeme_end_p lexbuf in
+	  let startl = startp.pos_lnum in
+	  let startpos = startp.pos_cnum - startp.pos_bol in
+	  let endl = endp.pos_lnum in
+	  let endpos = endp.pos_cnum - endp.pos_bol in
+	  Printf.sprintf "Unknown token from line %d characters %d to line %d characters %d" startl startpos endl endpos
+	  (*Printf.sprintf "unknown token %s near characters %d-%d"
 	   (Lexing.lexeme lexbuf)
 	   (Lexing.lexeme_start lexbuf)
-	   (Lexing.lexeme_end lexbuf)) }
+	   (Lexing.lexeme_end lexbuf)*)
+    ) }
 and comment = parse
 | "*)"
     { () }
