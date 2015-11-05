@@ -19,7 +19,7 @@
 (* fabs *)
 let rec fabs x =
   if x > 0.0 then x else (0.0-.x)
-
+in
 (* #sqrt *)
 let rec sqrt_sub x a =
   let xn = (x +. a/.x) *. 0.5 in
@@ -27,15 +27,16 @@ let rec sqrt_sub x a =
     xn
   else
     (sqrt_sub xn a)
-
+in
 let rec sqrt a = sqrt_sub a a
 
 (* #floor *)
-let rec floor x =
-  if x < 0.0 then (truncate (x -. 1.0)) else (truncate x)
+(*let rec floor x =
+  if x < 0.0 then (truncate (x -. 1.0)) else (truncate x)*)
 
 (* truncate *)
-let rec truncate x = int_of_float x
+(*let rec truncate x = int_of_float x*)
+in
 
 (* #cos *)
 let rec cos x =
@@ -46,6 +47,7 @@ let rec cos x =
       -. x4*.x2/.720.0
       +. x4*.x4/.40320.0
 
+in
 (* #sin *)
 let rec sin x =
   let x2 = x*.x in
@@ -56,6 +58,7 @@ let rec sin x =
     +. x5/.120.0
     -. x7/.5040.0
     +. x7*.x2/.362880.0
+in
 
 (* #atan *)(* only around 0 *)
 let rec atan x =
@@ -67,3 +70,5 @@ let rec atan x =
     +. x5/.5.0
     -. x7/.7.0
     +. x7*.x2/.9.0
+in
+0

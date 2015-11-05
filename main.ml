@@ -7,10 +7,10 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *
   if e = e' then e else
   iter (n - 1) e'
 
-let lexbuf outchan binchan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
+let lexbuf outchan binchan zerochan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  Emit.f outchan binchan
+  Emit.f outchan binchan zerochan
     (RegAlloc.f
       (Simm.f
 	 (Virtual.f
@@ -21,18 +21,20 @@ let lexbuf outchan binchan l = (* バッファをコンパイルしてチャン�
 			   (Typing.f
 			      (Parser.exp Lexer.token l)))))))))
 
-let string s = lexbuf stdout stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let string s = lexbuf stdout stdout stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
 let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out (f ^ ".s") in
-  let binchan = open_out (f ^ ".bin") in
+  let outchan = open_out ("result/" ^ f ^ ".s") in
+  let binchan = open_out ("result/" ^ f ^ ".bin") in
+  let zerochan = open_out ("result/" ^ f ^ ".zero") in
   try
-    lexbuf outchan binchan (Lexing.from_channel inchan);
+    lexbuf outchan binchan zerochan (Lexing.from_channel inchan);
     close_in inchan;
     close_out outchan;
     close_out binchan;
-  with e -> (close_in inchan; close_out outchan; close_out binchan; raise e)
+    close_out zerochan;
+  with e -> (close_in inchan; close_out outchan; close_out binchan; close_out zerochan; raise e)
 
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in

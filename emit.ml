@@ -470,7 +470,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   g oc (Tail, e)
 
 (* let f oc (Prog(data, fundefs, e)) = *)
-let f oc bc p =
+let f oc bc zc p =
   show_asm_prog "  " p;
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
@@ -490,4 +490,5 @@ let f oc bc p =
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
   file := !file ^ Printf.sprintf "11111111111111111111111111111111\n";
+  Printf.fprintf zc "%s" !file;
   write_byte bc (Str.global_replace (Str.regexp "\n") "" !file)
