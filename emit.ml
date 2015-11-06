@@ -38,6 +38,8 @@ let byte_to_int s =
   2 * (int_of_char s.[6] - 48) +
   (int_of_char s.[7] - 48)
 
+let log2 x = int_of_float ((log (float_of_int x))/.(log 2.0))
+
 let rec write_byte bc str =
   if str <> "" then
    (output_byte bc (byte_to_int (Str.string_before str 8));
@@ -122,7 +124,9 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg y));
      address := !address + 4
   | (NonTail(x), Neg(y)) ->
-     Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg y)
+     Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg y);
+     file := !file ^ Printf.sprintf "011111%s%s0000000011010000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     address := !address + 4
   | (NonTail(x), Add(y, V(z))) ->
       Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg y) (reg z);
       file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
@@ -132,19 +136,27 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_binary z 16 "");
      address := !address + 4
   | (NonTail(x), Sub(y, V(z))) ->
-     file := !file ^ Printf.sprintf "\tsub\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+     Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg z);
+     Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg x) (reg y);
+     file := !file ^ Printf.sprintf "011111%s%s0000000011010000\n" (reg_to_binary (reg x)) (reg_to_binary (reg z));
+     file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     address := !address + 8
   | (NonTail(x), Sub(y, C(z))) ->
      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
      address := !address + 4
-  | (NonTail(x), Mul(y, V(z))) ->
-     print_string "\thooray\n"
   | (NonTail(x), Mul(y, C(z))) ->
-     print_string "\thooray\n"
-  | (NonTail(x), Div(y, V(z))) ->
-     print_string "\thooray\n"
+     Printf.fprintf oc "\tli\t%s, %d\n" (reg x) (log2 z);
+     Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) (reg x);
+     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary (log2 z) 16 "");
+     file := !file ^ Printf.sprintf "011111%s%s%s00000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg x));
+     address := !address + 8
   | (NonTail(x), Div(y, C(z))) ->
-     print_string "\thooray\n"
+     Printf.fprintf oc "\tli\t%s, %d\n" (reg x) (log2 z);
+     Printf.fprintf oc "\tsr\t%s, %s, %s\n" (reg x) (reg y) (reg x);
+     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary (log2 z) 16 "");
+     file := !file ^ Printf.sprintf "011111%s%s%s10000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg x));
+     address := !address + 8
   | (NonTail(x), Slw(y, V(z))) ->
      Printf.fprintf oc "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z)
   | (NonTail(x), Slw(y, C(z))) ->
@@ -289,13 +301,13 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      address := !address + 4;
      g'_tail_if oc e1 e2 "bge" "blt"
   | (Tail, IfFEq(x, y, e1, e2)) ->
-     Printf.fprintf oc "\tfcmpu\t%s, %s\n" (reg x) (reg y);
-     file := !file ^ Printf.sprintf "011110%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     Printf.fprintf oc "\tfcmp\t%s, %s\n" (reg x) (reg y);
+     file := !file ^ Printf.sprintf "11111100000%s%s00000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
      address := !address + 4;
      g'_tail_if oc e1 e2 "beq" "bne"
   | (Tail, IfFLE(x, y, e1, e2)) ->
-     Printf.fprintf oc "\tfcmpu\t%s, %s\n" (reg x) (reg y);
-     file := !file ^ Printf.sprintf "011110%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     Printf.fprintf oc "\tfcmp\t%s, %s\n" (reg x) (reg y);
+     file := !file ^ Printf.sprintf "11111100000%s%s00000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
      address := !address + 4;
      g'_tail_if oc e1 e2 "ble" "bgt"
   | (NonTail(z), IfEq(x, V(y), e1, e2)) ->
@@ -329,12 +341,12 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      g'_non_tail_if oc (NonTail(z)) e1 e2 "bge" "blt"
   | (NonTail(z), IfFEq(x, y, e1, e2)) ->
      Printf.fprintf oc "\tfcmpu\t%s, %s\n" (reg x) (reg y);
-     file := !file ^ Printf.sprintf "011110%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     file := !file ^ Printf.sprintf "11111100000%s%s00000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
      address := !address + 4;
      g'_non_tail_if oc (NonTail(z)) e1 e2 "beq" "bne"
   | (NonTail(z), IfFLE(x, y, e1, e2)) ->
      Printf.fprintf oc "\tfcmpu\t%s, %s\n" (reg x) (reg y);
-     file := !file ^ Printf.sprintf "011110%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     file := !file ^ Printf.sprintf "11111100000%s%s00000000000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y));
      address := !address + 4;
      g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt"
   (* 関数呼び出しの仮想命令の実装 *)
@@ -343,8 +355,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      Printf.fprintf oc "\tlwz\t%s, 0(%s)\n" (reg reg_sw) (reg reg_cl);
      file := !file ^ Printf.sprintf "100000%s%s0000000000000000\n" (reg_to_binary (reg reg_sw)) (reg_to_binary (reg reg_cl));
      Printf.fprintf oc "\tmtctr\t%s\n\tbctr\n" (reg reg_sw);
-     file := !file ^ Printf.sprintf "011011%s000000000001110100110\n" (reg_to_binary (reg reg_sw));
-     file := !file ^ Printf.sprintf "01001100000000000000000000000000\n";
+     file := !file ^ Printf.sprintf "01111100000%s0000001110101000\n" (reg_to_binary (reg reg_sw));
+     file := !file ^ Printf.sprintf "01010000000000000000000000000000\n";
      address := !address + 12;
   | (Tail, CallDir(Id.L(x), ys, zs)) -> (* 末尾呼び出し *)
      g'_args oc [] ys zs;
@@ -364,9 +376,9 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
        Printf.fprintf oc "\tld\t%s, 0(%s)\n" reg_tmp (reg reg_cl);
        file := !file ^ Printf.sprintf "100000%s%s0000000000000000\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp);
        Printf.fprintf oc "\tmtctr\t%s\n" reg_tmp;
-       file := !file ^ Printf.sprintf "011011%s000000000001110100110\n" (reg_to_binary reg_tmp);
+       file := !file ^ Printf.sprintf "01111100000%s0000001110101000\n" (reg_to_binary reg_tmp);
        Printf.fprintf oc "\tbctrl\n";
-       file := !file ^ Printf.sprintf "01001100000000000000000000000000\n";
+       file := !file ^ Printf.sprintf "01010010000000000000000000000000\n";
        Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
        file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_minus_binary ss 16);
        Printf.fprintf oc "\tld\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;

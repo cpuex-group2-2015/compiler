@@ -1,7 +1,7 @@
-(* #create_array *)
-(* #create_float_array *)
-(* #int_of_float *)
-(* #float_of_int *)
+(* #create_array r2 r5 -> r2 *)
+(* #create_float_array r2 f0 -> r2 *)
+(* #int_of_float f0 -> r2 *)
+(* #float_of_int r2 -> f0 *)
 
 (* #print_newline *)
 (* putchar *)
