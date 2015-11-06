@@ -75,6 +75,11 @@ let load_label r label =
   "\tlis\t" ^ (reg r) ^ ", ha16(" ^ label ^ ")\n" ^
   "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lo16(" ^ label ^ ")\n"
 
+let load_label_binary r label =
+  let rb = reg_to_binary (reg r) in
+  let lb = int_to_binary (Hashtbl.find address_list label) 32 "" in
+  Printf.sprintf "001111%s00000%s\n001110%s%s%s\n" rb (String.sub lb 0 16) rb rb (String.sub lb 16 16)
+
 (* 関数呼び出しのために引数を並べ替える (register shuffling) *)
 let rec shuffle sw xys =
   (* remove identical moves *)
@@ -98,9 +103,12 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
     (* 末尾でなかったら計算結果を dest にセット *)
   | (NonTail(_), Nop) -> ()
   | (NonTail(x), Li(i)) when i >= -32768 && i < 32768 ->
-      Printf.fprintf oc "\tli\t%s, %d\n" (reg x) i;
-      file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary i 16 "");
-      address := !address + 4
+     Printf.fprintf oc "\tli\t%s, %d\n" (reg x) i;
+     address := !address + 4;
+     (if x <> "_R_0" then
+       file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary i 16 "")
+     else
+       file := !file ^ "11111111111111111111111111111111\n")
   | (NonTail(x), Li(i)) ->
       let n = i lsr 16 in
       let m = i lxor (n lsl 16) in
@@ -113,8 +121,9 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), FLi(Id.L(l))) ->
       let s = load_label reg_tmp l in
       Printf.fprintf oc "%s\tlf\t%s, 0(%s)\n" s (reg x) reg_tmp;
+      file := !file ^ (load_label_binary reg_tmp l);
       file := !file ^ Printf.sprintf "110010%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary reg_tmp);
-      address := !address + 4
+      address := !address + 12
   | (NonTail(x), SetL(Id.L(y))) ->
       let s = load_label x y in
       Printf.fprintf oc "%s" s;
@@ -487,12 +496,13 @@ let f oc bc zc p =
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
-    (Printf.fprintf oc "\t.data\n\t.literal8\n";
-     List.iter
+    (List.iter
        (fun (Id.L(x), d) ->
 	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%ld\n" (gethi d);
-	 Printf.fprintf oc "\t.long\t%ld\n" (getlo d))
+	 Printf.fprintf oc "\t.long\t%ld\n" (getlo d);
+	 file := !file ^ (int_to_binary (Int32.to_int (getlo d)) 32 "\n");
+	 Hashtbl.add address_list x !address;
+	 address := !address + 4)
        data));
   List.iter (fun fundef -> h oc fundef) fundefs;
   stackset := S.empty;
@@ -501,6 +511,5 @@ let f oc bc zc p =
   Printf.fprintf oc "# main entry point\n";
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
-  file := !file ^ Printf.sprintf "11111111111111111111111111111111\n";
   Printf.fprintf zc "%s" !file;
   write_byte bc (Str.global_replace (Str.regexp "\n") "" !file)
