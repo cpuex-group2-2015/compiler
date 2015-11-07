@@ -2,7 +2,5 @@
 target.ml
 
 fib.ml
-*.s
-*.bin
 
 /result
