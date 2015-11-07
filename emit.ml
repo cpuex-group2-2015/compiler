@@ -503,6 +503,66 @@ let f oc bc zc p =
 	 Hashtbl.add address_list x !address;
 	 address := !address + 4)
        data));
+
+  Hashtbl.add address_list "int_of_float_sub" !address;
+  Hashtbl.add address_list "_first_label" (!address + 60);
+  Hashtbl.add address_list "create_array" (!address + 72);
+  Hashtbl.add address_list "_array_loop" (!address + 80);
+  Hashtbl.add address_list "_second_label" (!address + 104);
+  Hashtbl.add address_list "create_float_array" (!address + 108);
+  Hashtbl.add address_list "float_of_int_sub" (!address + 124);
+  Hashtbl.add address_list "read_int" (!address + 156);
+  Hashtbl.add address_list "read_float" (!address + 164);
+  Hashtbl.add address_list "print_char" (!address + 176);
+  address := !address + 184;
+
+  file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
+  file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
+  file := !file ^ "00111000110000000000000000001001\n"; (* li *)
+  file := !file ^ "01111100010000100011000000110000\n"; (* sl *)
+  file := !file ^ "01111100010000100011010000110000\n"; (* sr *)
+  file := !file ^ "00111000110000000000000000000001\n"; (* li *)
+  file := !file ^ "01111100101001010011000000110000\n"; (* sl *)
+  file := !file ^ "00111000110000000000000000011000\n"; (* li *)
+  file := !file ^ "01111100101001010011010000110000\n"; (* sr *)
+  file := !file ^ "00111100110000000000000010000000\n"; (* lis *)
+  file := !file ^ "01111100010000100011001000010100\n"; (* add *)
+  file := !file ^ "00111000101001011111111101110100\n"; (* subi *)
+  file := !file ^ "01111000000001010000000000000000\n"; (* cmp *)
+  file := !file ^ "0100000100000000" ^ (int_to_binary (Hashtbl.find address_list "_first_label") 16 "") ^ "\n"; (* blt *)
+  file := !file ^ "01111100010000100010100000110000\n"; (* sl *)
+  file := !file ^ "01111100101001010000000011010000\n"; (* neg # _first_label *)
+  file := !file ^ "01111100010000100010110000110000\n"; (* sr *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "01111100110000100001001101111000\n"; (* mr # create_array*)
+  file := !file ^ "01111100010001000010001101111000\n"; (* mr *)
+  file := !file ^ "01111000000001100000000000000000\n"; (* cmp # _array_loop *)
+  file := !file ^ "0100000110000000" ^ (int_to_binary (Hashtbl.find address_list "_second_label") 16 "") ^ "\n"; (* beq *)
+  file := !file ^ "10010000101001000000000000000000\n"; (* st *)
+  file := !file ^ "00111000100001000000000000000100\n"; (* addi *)
+  file := !file ^ "00111000110001101111111111111111\n"; (* subi *)
+  file := !file ^ "0100100000000000" ^ (int_to_binary (Hashtbl.find address_list "_array_loop") 16 "") ^ "\n"; (* b *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr # _second_label*)
+  file := !file ^ "01111100110000100001001101111000\n"; (* mr # create_float_array*)
+  file := !file ^ "01111100010001000010001101111000\n"; (* mr *)
+  file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
+  file := !file ^ "0100100000000000" ^ (int_to_binary (Hashtbl.find address_list "_array_loop") 16 "") ^"\n"; (* b *)
+  file := !file ^ "00111000111000000000000000011111\n"; (* li # float_of_int_sub *)
+  file := !file ^ "01111100010000100011100000110000\n"; (* sl *)
+  file := !file ^ "00111000111000000000000000010111\n"; (* li *)
+  file := !file ^ "01111100101001010011100000110000\n"; (* sl *)
+  file := !file ^ "01111100010001010001001101111000\n"; (* or *)
+  file := !file ^ "01111100010001100001001101111000\n"; (* or *)
+  file := !file ^ "01010100000000100000000000000000\n"; (* mfgtf *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "00001000010000000000000000000000\n"; (* recv # read_int *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "00001000010000000000000000000000\n"; (* recv # read_float *)
+  file := !file ^ "01010100000000100000000000000000\n"; (* mfgtf *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "00000100010000000000000000000000\n"; (* send # print_char*)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+
   List.iter (fun fundef -> h oc fundef) fundefs;
   stackset := S.empty;
   stackmap := [];

@@ -1,10 +1,10 @@
 let rec fless fa fb = fa < fb in
 let rec fispos f = f > 0.0 in
 let rec fisneg f = f < 0.0 in
-let rec fiszero f = (x = 0.0) in
+let rec fiszero f = (f = 0.0) in
 let rec fhalf f = f *. 0.5 in
 let rec fsqr f = f *. f in
-let rec fneg f = -f in
+let rec fneg f = 0.0 -. f in
 
 let rec divide10 i res ten =
   if i < (ten + 10) then
@@ -15,7 +15,7 @@ in
 
 let rec print_int i =
   if i < 10 then
-    print_char (48+i)
+    print_char (48 + i)
   else
    (let (d, m) = divide10 i 1 10 in
     print_char (48 + d);
@@ -24,7 +24,7 @@ in
 
 let rec int_of_float f =
   let i = int_of_float_sub f in
-  if f < 0 then -i else i
+  if f < 0.0 then -i else i
 in
 
 let rec sign_of_int i = if i < 0 then 1 else 0 in
@@ -55,9 +55,7 @@ let rec sqrt a = sqrt_sub a a in
 
 let rec truncate x = int_of_float x in
 
-let rec floor x =
-  if x < 0.0 then (truncate (x -. 1.0)) else (truncate x)
-in
+let rec floor x = if x > 0.0 then (float_of_int (truncate x)) else (float_of_int (truncate (x -. 1.0))) in
 
 let rec cos x =
   let x2 = x*.x in

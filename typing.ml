@@ -243,11 +243,15 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
 	unify Type.Int (g env e2);
 	Type.Unit
   with Unify(t1, t2) ->
+    print_string "\tTypeError Here\n";
+    show_syntax_tree "\t" e;
+    print_string ("\tt1: " ^ (Type.type_to_string t1) ^ "\n");
+    print_string ("\tt2: " ^ (Type.type_to_string t2) ^ "\n");
     raise (Error(deref_term e, deref_typ t1, deref_typ t2))
 
 let f e =
   extenv := M.empty;
-(*print_string "=======================\n";
+(*  print_string "=======================\n";
   print_string "\tSyntax\n";
   print_string "=======================\n";
   show_syntax_tree "\t" e; *)
@@ -256,10 +260,12 @@ let f e =
   | Type.Unit -> ()
   | _ -> Format.eprintf "warning: final result does not have type unit@.");
 *)
-  (try unify Type.Unit (g M.empty e)
+(*  (try unify Type.Unit (g M.empty e)
   with
     Unify _ ->
     (try unify Type.Int (g M.empty e)
-     with Unify _ -> failwith "you have to print out something"));
+     with Unify _ -> failwith "you have to print out something"));*)
+  (try unify Type.Int (g M.empty e)
+   with Unify _ -> failwith "you have to print out something");
   extenv := M.map deref_typ !extenv;
   deref_term e

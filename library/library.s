@@ -18,11 +18,11 @@
 	blr
 	mr	r6, r2		# create_array
 	mr	r2, r4		# r2 r5 -> r2
-	cmp	r6, 0		# _array_loop
+	cmp	r6, r0		# _array_loop
 	beq	_second_label
 	st	r5, 0(r4)
-	addi	r4, 4
-	subi	r6, 1
+	addi	r4, r4, 4
+	subi	r6, r6, 1
 	b	_array_loop
 	blr			# _second_label
 	mr	r6, r2		# create_float_array
