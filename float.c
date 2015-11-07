@@ -3,18 +3,12 @@
 #include <caml/alloc.h>
 
 typedef union {
-  int32 i[2];
-  double d;
+  int32 i;
+  float d;
 } dbl;
 
-value gethi(value v) {
+value geti(value v) {
   dbl d;
   d.d = Double_val(v);
-  return copy_int32(d.i[0]);
-}
-
-value getlo(value v) {
-  dbl d;
-  d.d = Double_val(v);
-  return copy_int32(d.i[1]);
+  return copy_int32(d.i);
 }

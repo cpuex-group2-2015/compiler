@@ -1,7 +1,6 @@
 open Asm
 
-external gethi : float -> int32 = "gethi"
-external getlo : float -> int32 = "getlo"
+external geti : float -> int32 = "geti"
 
 let file = ref ""
 let address = ref 0
@@ -499,8 +498,8 @@ let f oc bc zc p =
     (List.iter
        (fun (Id.L(x), d) ->
 	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%ld\n" (getlo d);
-	 file := !file ^ (int_to_binary (Int32.to_int (getlo d)) 32 "\n");
+	 Printf.fprintf oc "\t.long\t%ld\n" (geti d);
+	 file := !file ^ (int_to_binary (Int32.to_int (geti d)) 32 "\n");
 	 Hashtbl.add address_list x !address;
 	 address := !address + 4)
        data));
