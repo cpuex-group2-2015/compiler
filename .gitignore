@@ -1,6 +1,9 @@
 .DS_Store
-target.ml
 
+target.ml
 fib.ml
 
-/result
+result/*.bin
+result/*.data
+result/*.s
+result/*.zero
