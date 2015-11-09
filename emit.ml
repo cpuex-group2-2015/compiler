@@ -490,7 +490,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   g oc (Tail, e)
 
 (* let f oc (Prog(data, fundefs, e)) = *)
-let f oc bc zc p =
+let f oc bc dc zc p =
   show_asm_prog "  " p;
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
@@ -503,6 +503,8 @@ let f oc bc zc p =
 	 Hashtbl.add address_list x !address;
 	 address := !address + 4)
        data));
+
+  write_byte dc (Str.global_replace (Str.regexp "\n") "" !file);
 
   Hashtbl.add address_list "int_of_float_sub" !address;
   Hashtbl.add address_list "_first_label" (!address + 60);
