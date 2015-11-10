@@ -264,10 +264,10 @@ let rec delete_duplication list e =
 
 let f e =
   let tmp = fst (g M.empty e) in
-  print_string "=======================\n";
+  (* print_string "=======================\n";
   print_string "\tKNormal\n";
   print_string "=======================\n";
-  show_knormal "\t" tmp;(*
+  show_knormal "\t" tmp;
   let list = Hashtbl.create 0 in
   let res = delete_duplication list tmp in
   print_string "=======================\n";

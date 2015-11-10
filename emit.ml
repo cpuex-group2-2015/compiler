@@ -5,6 +5,7 @@ external geti : float -> int32 = "geti"
 let file = ref ""
 let address = ref 0
 let address_list = Hashtbl.create 0
+let heap_pointer = ref 0
 
 let rec int_to_binary int digit res =
   if int > 0 then
@@ -491,7 +492,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 (* let f oc (Prog(data, fundefs, e)) = *)
 let f oc bc dc zc p =
-  show_asm_prog "  " p;
+  (* show_asm_prog "  " p; *)
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
@@ -501,10 +502,17 @@ let f oc bc dc zc p =
 	 Printf.fprintf oc "\t.long\t%ld\n" (geti d);
 	 file := !file ^ (int_to_binary (Int32.to_int (geti d)) 32 "\n");
 	 Hashtbl.add address_list x !address;
-	 address := !address + 4)
+	 heap_pointer := !heap_pointer + 4)
        data));
 
   write_byte dc (Str.global_replace (Str.regexp "\n") "" !file);
+  Printf.fprintf oc "\tli\tr3, %d\n" !heap_pointer;
+  Printf.fprintf oc "\tli\tr4, 0\n";
+  Printf.fprintf oc "\tb\t_main_entry_\n";
+  file := "0011100001100000" ^ (int_to_binary !heap_pointer 16 "") ^ "\n";
+  file := !file ^ "00111000100000000000000000000000\n";
+  file := !file ^ "0100100000000000_main_entry_\n";
+  address := !address + 12;
 
   Hashtbl.add address_list "int_of_float_sub" !address;
   Hashtbl.add address_list "_first_label" (!address + 60);
@@ -569,6 +577,7 @@ let f oc bc dc zc p =
   stackset := S.empty;
   stackmap := [];
   print_string ("main entry point address " ^ (string_of_int !address) ^ "\n");
+  file := (Str.global_replace (Str.regexp "_main_entry_") (int_to_binary !address 16 "") !file);
   Printf.fprintf oc "# main entry point\n";
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");

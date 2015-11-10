@@ -15,9 +15,7 @@ min-camlが生成されます
 ```
 
 Four files will be generated in folder 'result'.
-- target.s is an assembler text file
-- target.bin is the whole binary file
+- target.s is the whole assembler text file
+- target.bin is the instruction only binary file
 - target.data is the data only binary file
-- target.zero is the pseudo-binary text file
-
-
+- target.zero is the instruction only pseudo-binary text file
