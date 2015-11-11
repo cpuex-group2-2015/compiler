@@ -59,33 +59,17 @@ let rec floor x = if x > 0.0 then (float_of_int (truncate x)) else (float_of_int
 
 let rec cos x =
   let x2 = x*.x in
-  let x4 = x2*.x2 in
-  1.0 -. x2/.2.0
-      +. x4/.24.0
-      -. x4*.x2/.720.0
-      +. x4*.x4/.40320.0
+  (((x2/.40320.0 -. 1.0/.720.0)*.x2 +. 1.0/.24.0)*.x2 -. 0.5)*.x2 +. 1.0
 in
 
 let rec sin x =
   let x2 = x*.x in
-  let x3 = x2*.x in
-  let x5 = x3*.x2 in
-  let x7 = x5*.x2 in
-  x -. x3/.6.0
-    +. x5/.120.0
-    -. x7/.5040.0
-    +. x7*.x2/.362880.0
+  ((((x2/.362880.0 -. 1.0/.5040.0)*.x2 +. 1.0/.120.0)*.x2 -. 1.0/.6.0)*.x2 +. 1.0)*.x
 in
 
 (* only around 0 *)
 let rec atan x =
   let x2 = x*.x in
-  let x3 = x2*.x in
-  let x5 = x3*.x2 in
-  let x7 = x5*.x2 in
-  x -. x3/.3.0
-    +. x5/.5.0
-    -. x7/.7.0
-    +. x7*.x2/.9.0
+  ((((x2/.9.0 -. 1.0/.7.0)*.x2 +. 0.2)*.x2 -. 1.0/.3.0)*.x2 +. 1.0)*.x
 in
 0

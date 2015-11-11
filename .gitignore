@@ -2,8 +2,20 @@
 
 target.ml
 fib.ml
+test.ml
 
 result/*.bin
 result/*.data
 result/*.s
 result/*.zero
+
+*.cmi
+*.cmo
+*.o
+min-caml
+min-caml.top
+parser.ml
+parser.mli
+lexer.ml
+._bcdi/
+._d/
