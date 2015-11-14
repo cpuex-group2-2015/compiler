@@ -506,11 +506,11 @@ let f oc bc dc zc p =
        data));
 
   write_byte dc (Str.global_replace (Str.regexp "\n") "" !file);
-  Printf.fprintf oc "\tli\tr3, %d\n" !heap_pointer;
-  Printf.fprintf oc "\tli\tr4, 0\n";
+  Printf.fprintf oc "\tli\tr3, 16384\n";
+  Printf.fprintf oc "\tli\tr4, %d\n" !heap_pointer;
   Printf.fprintf oc "\tb\t_main_entry_\n";
-  file := "0011100001100000" ^ (int_to_binary !heap_pointer 16 "") ^ "\n";
-  file := !file ^ "00111000100000000000000000000000\n";
+  file := "00111000011000000100000000000000\n";
+  file := !file ^ "0011100010000000" ^ (int_to_binary !heap_pointer 16 "") ^ "\n";
   file := !file ^ "0100100000000000_main_entry_\n";
   address := !address + 12;
 
