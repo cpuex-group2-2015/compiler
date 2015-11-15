@@ -145,10 +145,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_binary z 16 "");
      address := !address + 4
   | (NonTail(x), Sub(y, V(z))) ->
-     Printf.fprintf oc "\tneg\t%s, %s\n" (reg x) (reg z);
-     Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg x) (reg y);
-     file := !file ^ Printf.sprintf "011111%s%s0000000011010000\n" (reg_to_binary (reg x)) (reg_to_binary (reg z));
-     file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg x)) (reg_to_binary (reg y));
+     Printf.fprintf oc "\tneg\t%s, %s\n" reg_tmp (reg z);
+     Printf.fprintf oc "\tadd\t%s, %s, %s\n" (reg x) (reg y) reg_tmp;
+     file := !file ^ Printf.sprintf "011111%s%s0000000011010000\n" (reg_to_binary reg_tmp) (reg_to_binary (reg z));
+     file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
      address := !address + 8
   | (NonTail(x), Sub(y, C(z))) ->
      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
@@ -492,7 +492,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 (* let f oc (Prog(data, fundefs, e)) = *)
 let f oc bc dc zc p =
-  (* show_asm_prog "  " p; *)
+  (*show_asm_prog "  " p;*)
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
