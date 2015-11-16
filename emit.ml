@@ -501,7 +501,7 @@ let f oc bc dc zc p =
 	 Printf.fprintf oc "%s:\t # %f\n" x d;
 	 Printf.fprintf oc "\t.long\t%ld\n" (geti d);
 	 file := !file ^ (int_to_binary (Int32.to_int (geti d)) 32 "\n");
-	 Hashtbl.add address_list x !address;
+	 Hashtbl.add address_list x !heap_pointer;
 	 heap_pointer := !heap_pointer + 4)
        data));
 
