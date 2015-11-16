@@ -30,7 +30,15 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let datachan = open_out ("result/" ^ f ^ ".data") in
   let zerochan = open_out ("result/" ^ f ^ ".zero") in
   try
-    lexbuf outchan binchan datachan zerochan (Lexing.from_channel inchan);
+    let libchan = open_in ("lib/lib.ml") in
+    let liblength = in_channel_length libchan in
+    let libstring = String.create liblength in
+    really_input libchan libstring 0 liblength;
+    close_in libchan;
+    let inlength = in_channel_length inchan in
+    let instring = String.create inlength in
+    really_input inchan instring 0 inlength;
+    lexbuf outchan binchan datachan zerochan (Lexing.from_string (libstring ^ instring));
     close_in inchan;
     close_out outchan;
     close_out binchan;
@@ -49,4 +57,3 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   List.iter
     (fun f -> ignore (file f))
     !files
-

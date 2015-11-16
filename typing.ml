@@ -265,7 +265,8 @@ let f e =
     Unify _ ->
     (try unify Type.Int (g M.empty e)
      with Unify _ -> failwith "you have to print out something"));*)
+
   (try unify Type.Int (g M.empty e)
-   with Unify _ -> failwith "you have to print out something");
+   with _ -> (try unify Type.Unit (g M.empty e) with _ -> failwith "Whole thing need to be int or unit"));
   extenv := M.map deref_typ !extenv;
   deref_term e

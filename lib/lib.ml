@@ -18,8 +18,8 @@ let rec print_int i =
     print_char (48 + i)
   else
    (let (d, m) = divide10 i 1 10 in
-    print_char (48 + d);
-    print_int m)
+    print_int d;
+    print_char (48 + m))
 in
 
 let rec int_of_float f =
@@ -72,4 +72,3 @@ let rec atan x =
   let x2 = x*.x in
   ((((x2/.9.0 -. 1.0/.7.0)*.x2 +. 0.2)*.x2 -. 1.0/.3.0)*.x2 +. 1.0)*.x
 in
-0
