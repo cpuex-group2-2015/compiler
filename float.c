@@ -9,6 +9,6 @@ typedef union {
 
 value geti(value v) {
   dbl d;
-  d.d = Double_val(v);
+  d.d = (float)Double_val(v);
   return copy_int32(d.i);
 }

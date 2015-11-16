@@ -498,9 +498,11 @@ let f oc bc dc zc p =
   (if data <> [] then
     (List.iter
        (fun (Id.L(x), d) ->
+	 let data_int = Int32.to_int (geti d) in
 	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%ld\n" (geti d);
-	 file := !file ^ (int_to_binary (Int32.to_int (geti d)) 32 "\n");
+	 Printf.fprintf oc "\t.long\t%d\n" data_int;
+	 (if data_int >= 0 then file := !file ^ (int_to_binary data_int 32 "\n")
+	 else file := !file ^ (int_to_minus_binary (-data_int) 32) ^ "\n");
 	 Hashtbl.add address_list x !heap_pointer;
 	 heap_pointer := !heap_pointer + 4)
        data));
