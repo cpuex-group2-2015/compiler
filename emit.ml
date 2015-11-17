@@ -8,19 +8,22 @@ let address_list = Hashtbl.create 0
 let heap_pointer = ref 0
 let step = 4
 
-let rec int_to_binary int digit res =
+let rec int_to_binary' int digit res =
   if int > 0 then
-    int_to_binary (int / 2) (digit - 1) ((string_of_int (int mod 2)) ^ res)
+    int_to_binary' (int / 2) (digit - 1) ((string_of_int (int mod 2)) ^ res)
   else if digit > 0 then
-    int_to_binary int (digit - 1) ("0" ^ res)
+    int_to_binary' int (digit - 1) ("0" ^ res)
   else
     res
 
+let int_to_minus_binary int digit =
+  int_to_binary' ((int_of_float (2. ** (float_of_int digit))) - int) digit ""
+
+let int_to_binary int digit res =
+  if int < 0 then (int_to_minus_binary (-int) digit) else (int_to_binary' int digit res)
+
 let reg_to_binary reg =
   int_to_binary (int_of_string (String.sub reg 1 (String.length reg - 1))) 5 ""
-
-let int_to_minus_binary int digit =
-  int_to_binary ((int_of_float (2. ** (float_of_int digit))) - int) digit ""
 
 let br_to_binary b = match b with
   | "blt" -> "0100000100000000";
@@ -156,16 +159,16 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
      address := !address + step
   | (NonTail(x), Mul(y, C(z))) ->
-     Printf.fprintf oc "\tli\t%s, %d\n" (reg x) (log2 z);
-     Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) (reg x);
-     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary (log2 z) 16 "");
-     file := !file ^ Printf.sprintf "011111%s%s%s00000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg x));
+     Printf.fprintf oc "\tli\t%s, %d\n" reg_tmp (log2 z);
+     Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) reg_tmp;
+     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary reg_tmp) (int_to_binary (log2 z) 16 "");
+     file := !file ^ Printf.sprintf "011111%s%s%s00000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
      address := !address + step * 2
   | (NonTail(x), Div(y, C(z))) ->
-     Printf.fprintf oc "\tli\t%s, %d\n" (reg x) (log2 z);
-     Printf.fprintf oc "\tsr\t%s, %s, %s\n" (reg x) (reg y) (reg x);
-     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary (log2 z) 16 "");
-     file := !file ^ Printf.sprintf "011111%s%s%s10000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg x));
+     Printf.fprintf oc "\tli\t%s, %d\n" reg_tmp (log2 z);
+     Printf.fprintf oc "\tsr\t%s, %s, %s\n" (reg x) (reg y) reg_tmp;
+     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary reg_tmp) (int_to_binary (log2 z) 16 "");
+     file := !file ^ Printf.sprintf "011111%s%s%s10000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
      address := !address + step * 2
   | (NonTail(x), Slw(y, V(z))) ->
      Printf.fprintf oc "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z)
@@ -560,8 +563,8 @@ let f oc bc dc zc p =
   file := !file ^ "01111100010001000010001101111000\n"; (* mr *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
   file := !file ^ "0100100000000000" ^ (int_to_binary (Hashtbl.find address_list "_array_loop") 16 "") ^"\n"; (* b *)
-  file := !file ^ "00111000111000000000000000011111\n"; (* li # float_of_int_sub *)
-  file := !file ^ "01111100010000100011100000110000\n"; (* sl *)
+  file := !file ^ "01111100110001100001000000110000\n"; (* sl # float_of_int_sub *)
+  file := !file ^ "00111000010000000000000000000000\n"; (* li *)
   file := !file ^ "00111000111000000000000000010111\n"; (* li *)
   file := !file ^ "01111100101001010011100000110000\n"; (* sl *)
   file := !file ^ "01111100010001010001001101111000\n"; (* or *)

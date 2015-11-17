@@ -29,8 +29,8 @@
 	mr	r2, r4
 	mfftg	r5, f0
 	b	_array_loop
-	li	r7, 31		# float_of_int_sub
-	sl	r2, r2, r7	# r2 r5 r6 -> f0
+	sl	r6, r6, r2	# float_of_int_sub
+	li	r2, 0		# r2 r5 r6 -> f0
 	li	r7, 23
 	sl	r5, r5, r7
 	or	r2, r5, r2

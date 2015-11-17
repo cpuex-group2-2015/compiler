@@ -13,13 +13,17 @@ let rec divide10 i res ten =
     divide10 i (res + 1) (ten + 10)
 in
 
-let rec print_int i =
+let rec print_int_sub i =
   if i < 10 then
     print_char (48 + i)
   else
    (let (d, m) = divide10 i 1 10 in
-    print_int d;
+    print_int_sub d;
     print_char (48 + m))
+in
+
+let rec print_int i =
+  if (i >= 0) then (print_int_sub i) else (print_char 45; print_int_sub (-i))
 in
 
 let rec int_of_float f =
@@ -27,17 +31,17 @@ let rec int_of_float f =
   if f < 0.0 then -i else i
 in
 
-let rec sign_of_int i = if i < 0 then 1 else 0 in
-
 let rec exp_man_of_int e two i =
   if i < two then
-    let s = sign_of_int i in
-    float_of_int_sub s (e+126) (i - two/2)
+    float_of_int_sub (24-e) (e+126) (i - two/2)
   else
     exp_man_of_int (e+1) (two*2) i
 in
 
-let rec float_of_int i = exp_man_of_int 0 1 i in
+let rec float_of_int i =
+  if (i > 0) then (exp_man_of_int 0 1 i) else
+    (if (i < 0) then (0.0 -. (exp_man_of_int 0 1 (-i))) else 0.0)
+in
 
 let rec fabs x =
   if x > 0.0 then x else (0.0 -. x)
