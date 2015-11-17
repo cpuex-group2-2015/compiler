@@ -37,7 +37,7 @@
 	or	r2, r6, r2
 	mfgtf	f0, r2
 	blr
-	recv	r2		# read_int
+	recv	r2		# read_byte
 	blr
 	recv	r2		# read_float
 	mfgtf	f0, r2

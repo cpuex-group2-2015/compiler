@@ -218,3 +218,14 @@ let rec atan x =
 	    else
 	      (atan_tail x))))) in
 
+let rec times10 x = let x8 = x * 8 in let x2 = x * 2 in x8 + x2 in
+
+let rec read_int_sub res sign =
+  let x = read_byte () in
+  if x = 32 then (if sign = 1 then res else (-res))
+  else if x = 45 then (read_int_sub res (-1))
+  else
+    let x = (x - 48) in (read_int_sub (x + (times10 res)) sign)
+in
+
+let rec read_int _ = read_int_sub 0 1 in
