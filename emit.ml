@@ -584,4 +584,11 @@ let f oc bc dc zc p =
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int !address) ^ " lines in total\n");
   Printf.fprintf zc "%s" !file;
-  write_byte bc (Str.global_replace (Str.regexp "\n") "" !file)
+  write_byte bc (Str.global_replace (Str.regexp "\n") "" !file);
+
+  let hashchan = open_out ("result/funs.txt") in
+  let write_to_hash_txt key value =
+    if (String.sub key 0 2) <> "l." then
+      Printf.fprintf hashchan "%s %d\n" key value
+    else () in
+  Hashtbl.iter write_to_hash_txt address_list
