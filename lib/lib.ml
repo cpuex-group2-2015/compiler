@@ -229,12 +229,19 @@ let rec atan x =
 let rec read_int_sub res sign =
   let x = read_byte () in
   if x = 32 then (if sign = 1 then res else (-res))
-  else if x = 45 then (read_int_sub res (-1))
-  else
-    let x = (x - 48) in (read_int_sub (x + (times10 res)) sign)
+  else if x = 10 then (if sign = 1 then res else (-res))
+  else let x = (x - 48) in (read_int_sub (x + (times10 res)) sign)
 in
 
-let rec read_int _ = read_int_sub 0 1 in
+let rec read_int_pre _ =
+  let x = read_byte () in
+  if x = 32 then read_int_pre ()
+  else if x = 10 then read_int_pre ()
+  else if x = 45 then read_int_sub 0 (-1)
+  else read_int_sub (x-48) 1
+in
+
+let rec read_int _ = read_int_pre () in
 
 let rec read_float_sub res sign dot =
   let x = read_byte () in
