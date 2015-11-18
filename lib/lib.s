@@ -9,10 +9,11 @@
 	sr	r5, r5, r6
 	lis	r6, 0b0000000010000000
 	add	r2, r2, r6
-	subi	r5, r5, 140
+	subi	r5, r5, 150
 	cmp	r5, r0
 	blt	_first_label
 	sl	r2, r2, r5
+	blr
 	neg	r5, r5		# _first_label
 	sr	r2, r2, r5
 	blr

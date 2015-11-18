@@ -26,9 +26,10 @@ let rec print_int i =
   if (i >= 0) then (print_int_sub i) else (print_char 45; print_int_sub (-i))
 in
 
+let rec int_of_float_pos f = int_of_float_sub (f +. 0.5) in
+
 let rec int_of_float f =
-  let i = int_of_float_sub f in
-  if f < 0.0 then -i else i
+  if f < 0.0 then 0 - (int_of_float_pos (0.0 -. f)) else int_of_float_pos f
 in
 
 let rec exp_man_of_int e two i =

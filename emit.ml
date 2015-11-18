@@ -521,16 +521,16 @@ let f oc bc dc zc p =
   address := !address + step * 3;
 
   Hashtbl.add address_list "int_of_float_sub" !address;
-  Hashtbl.add address_list "_first_label" (!address + step * 15);
-  Hashtbl.add address_list "create_array" (!address + step * 18);
-  Hashtbl.add address_list "_array_loop" (!address + step * 20);
-  Hashtbl.add address_list "_second_label" (!address + step * 26);
-  Hashtbl.add address_list "create_float_array" (!address + step * 27);
-  Hashtbl.add address_list "float_of_int_sub" (!address + step * 31);
-  Hashtbl.add address_list "read_byte" (!address + step * 39);
-  Hashtbl.add address_list "read_float" (!address + step * 41);
-  Hashtbl.add address_list "print_char" (!address + step * 44);
-  address := !address + step * 46;
+  Hashtbl.add address_list "_first_label" (!address + step * 16);
+  Hashtbl.add address_list "create_array" (!address + step * 19);
+  Hashtbl.add address_list "_array_loop" (!address + step * 21);
+  Hashtbl.add address_list "_second_label" (!address + step * 27);
+  Hashtbl.add address_list "create_float_array" (!address + step * 28);
+  Hashtbl.add address_list "float_of_int_sub" (!address + step * 32);
+  Hashtbl.add address_list "read_byte" (!address + step * 40);
+  Hashtbl.add address_list "read_float" (!address + step * 42);
+  Hashtbl.add address_list "print_char" (!address + step * 45);
+  address := !address + step * 47;
 
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
@@ -543,10 +543,11 @@ let f oc bc dc zc p =
   file := !file ^ "01111100101001010011010000110000\n"; (* sr *)
   file := !file ^ "00111100110000000000000010000000\n"; (* lis *)
   file := !file ^ "01111100010000100011001000010100\n"; (* add *)
-  file := !file ^ "00111000101001011111111101110100\n"; (* subi *)
+  file := !file ^ "00111000101001011111111101101010\n"; (* subi *)
   file := !file ^ "01111000000001010000000000000000\n"; (* cmp *)
   file := !file ^ "0100000100000000" ^ (int_to_binary (Hashtbl.find address_list "_first_label") 16 "") ^ "\n"; (* blt *)
   file := !file ^ "01111100010000100010100000110000\n"; (* sl *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "01111100101001010000000011010000\n"; (* neg # _first_label *)
   file := !file ^ "01111100010000100010110000110000\n"; (* sr *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
