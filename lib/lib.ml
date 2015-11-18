@@ -13,6 +13,8 @@ let rec divide10 i res ten =
     divide10 i (res + 1) (ten + 10)
 in
 
+let rec times10 x = let x8 = x * 8 in let x2 = x * 2 in x8 + x2 in
+
 let rec print_int_sub i =
   if i < 10 then
     print_char (48 + i)
@@ -22,15 +24,11 @@ let rec print_int_sub i =
     print_char (48 + m))
 in
 
-let rec print_int i =
-  if (i >= 0) then (print_int_sub i) else (print_char 45; print_int_sub (-i))
-in
+let rec print_int i = if (i >= 0) then (print_int_sub i) else (print_char 45; print_int_sub (-i)) in
 
 let rec int_of_float_pos f = int_of_float_sub (f +. 0.5) in
 
-let rec int_of_float f =
-  if f < 0.0 then 0 - (int_of_float_pos (0.0 -. f)) else int_of_float_pos f
-in
+let rec int_of_float f = if f < 0.0 then 0 - (int_of_float_pos (0.0 -. f)) else int_of_float_pos f in
 
 let rec exp_man_of_int e two i =
   if i < two then
@@ -43,6 +41,19 @@ let rec float_of_int i =
   if (i > 0) then (exp_man_of_int 0 1 i) else
     (if (i < 0) then (0.0 -. (exp_man_of_int 0 1 (-i))) else 0.0)
 in
+
+let rec print_float_sub x =
+  let d = int_of_float_sub x in
+  print_int d; print_char 46; print_int ((int_of_float_sub (x *. 1000.0)) - (times10 (times10 (times10 d))))
+in
+
+let rec print_float x = if (x >= 0.0) then print_float_sub x else (print_char 45; print_float_sub (0.0-.x)) in
+
+let rec truncate x = int_of_float x in
+
+let rec floor_int x = if x >= 0.0 then (int_of_float_sub x) else (-(int_of_float_sub (0.0 -. x)) - 1) in
+
+let rec floor x = float_of_int (floor_int x) in
 
 let rec fabs x =
   if x > 0.0 then x else (0.0 -. x)
@@ -57,10 +68,6 @@ let rec sqrt_sub x a =
 in
 
 let rec sqrt a = sqrt_sub a a in
-
-let rec truncate x = int_of_float x in
-
-let rec floor x = if x > 0.0 then (float_of_int (truncate x)) else (float_of_int (truncate (x -. 1.0))) in
 
 let rec cos x =
   let x2 = x*.x in
@@ -218,8 +225,6 @@ let rec atan x =
 	      (atan_i5 x)
 	    else
 	      (atan_tail x))))) in
-
-let rec times10 x = let x8 = x * 8 in let x2 = x * 2 in x8 + x2 in
 
 let rec read_int_sub res sign =
   let x = read_byte () in
