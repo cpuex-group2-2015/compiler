@@ -40,8 +40,5 @@
 	blr
 	recv	r2		# read_byte
 	blr
-	recv	r2		# read_float
-	mfgtf	f0, r2
-	blr
 	send	r2		# print_char
 	blr

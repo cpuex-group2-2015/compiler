@@ -235,3 +235,16 @@ let rec read_int_sub res sign =
 in
 
 let rec read_int _ = read_int_sub 0 1 in
+
+let rec read_float_sub res sign dot =
+  let x = read_byte () in
+  if x = 32 then (if sign = 1.0 then res else (0.0 -. res))
+  else if x = 45 then (read_float_sub res (-1.0) dot)
+  else if x = 46 then (read_float_sub res sign 0.1)
+  else
+    let f = float_of_int (x - 48) in
+    if dot < 1.0 then (read_float_sub (res +. dot*.f) sign (dot/.1.0))
+    else (read_float_sub (res *. 10.0 +. f) sign dot)
+in
+
+let rec read_float _ = read_float_sub 0.0 1.0 1.0 in

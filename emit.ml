@@ -528,9 +528,8 @@ let f oc bc dc zc p =
   Hashtbl.add address_list "create_float_array" (!address + step * 28);
   Hashtbl.add address_list "float_of_int_sub" (!address + step * 32);
   Hashtbl.add address_list "read_byte" (!address + step * 40);
-  Hashtbl.add address_list "read_float" (!address + step * 42);
-  Hashtbl.add address_list "print_char" (!address + step * 45);
-  address := !address + step * 47;
+  Hashtbl.add address_list "print_char" (!address + step * 42);
+  address := !address + step * 44;
 
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
@@ -573,9 +572,6 @@ let f oc bc dc zc p =
   file := !file ^ "01010100000000100000000000000000\n"; (* mfgtf *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "00001000010000000000000000000000\n"; (* recv # read_byte *)
-  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
-  file := !file ^ "00001000010000000000000000000000\n"; (* recv # read_float *)
-  file := !file ^ "01010100000000100000000000000000\n"; (* mfgtf *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "00000100010000000000000000000000\n"; (* send # print_char*)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
