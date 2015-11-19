@@ -23,7 +23,10 @@ let int_to_binary int digit res =
   if int < 0 then (int_to_minus_binary (-int) digit) else (int_to_binary' int digit res)
 
 let reg_to_binary reg =
-  int_to_binary (int_of_string (String.sub reg 1 (String.length reg - 1))) 5 ""
+  let ir = String.index reg 'r' in
+  let start = ir + 1 in
+  let length = (String.length reg) - start in
+  int_to_binary (int_of_string (String.sub reg start length)) 5 ""
 
 let br_to_binary b = match b with
   | "blt" -> "0100000100000000";
@@ -131,6 +134,8 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(x), SetL(Id.L(y))) ->
       let s = load_label x y in
       Printf.fprintf oc "%s" s;
+      file := !file ^ (load_label_binary x y);
+      address := !address + step * 2
   | (NonTail(x), Mr(y)) when x = y -> ()
   | (NonTail(x), Mr(y)) ->
      Printf.fprintf oc "\tmr\t%s, %s\n" (reg x) (reg y);
@@ -387,7 +392,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
        Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
        file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_binary ss 16 "");
        Printf.fprintf oc "\tld\t%s, 0(%s)\n" reg_tmp (reg reg_cl);
-       file := !file ^ Printf.sprintf "100000%s%s0000000000000000\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp);
+       file := !file ^ Printf.sprintf "100000%s%s0000000000000000\n" (reg_to_binary reg_tmp) (reg_to_binary reg_cl);
        Printf.fprintf oc "\tmtctr\t%s\n" reg_tmp;
        file := !file ^ Printf.sprintf "01111100000%s0000001110101000\n" (reg_to_binary reg_tmp);
        Printf.fprintf oc "\tbctrl\n";
