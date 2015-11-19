@@ -69,15 +69,41 @@ in
 
 let rec sqrt a = sqrt_sub a a in
 
-let rec cos x =
+let rec cos_core x =
   let x2 = x*.x in
   (((x2/.40320.0 -. 1.0/.720.0)*.x2 +. 1.0/.24.0)*.x2 -. 0.5)*.x2 +. 1.0
 in
 
-let rec sin x =
+let rec sin_core x =
   let x2 = x*.x in
   ((((x2/.362880.0 -. 1.0/.5040.0)*.x2 +. 1.0/.120.0)*.x2 -. 1.0/.6.0)*.x2 +. 1.0)*.x
 in
+
+let rec sin_sub x flag =
+  if x >= 6.28318531 then sin_sub (x -. 6.28318531) flag
+  else if x >= 3.14159265 then sin_sub (x -. 3.14159265) (0.0 -. flag)
+  else if x >= 1.57079633 then sin_sub (3.14159265 -. x) flag
+  else if x <= 0.78539816 then (if flag > 0.0 then sin_core x else -1.0 *. (sin_core x))
+  else
+    let v = 1.57079633 -. x in
+    let s = cos_core v in
+    if flag > 0.0 then s else -1.0 *. s
+in
+
+let rec cos_sub x flag =
+  if x >= 6.28318531 then cos_sub (x -. 6.28318531) flag
+  else if x >= 3.14159265 then cos_sub (x -. 3.14159265) (0.0 -. flag)
+  else if x >= 1.57079633 then cos_sub (3.14159265 -. x) (0.0 -. flag)
+  else if x <= 0.78539816 then (if flag > 0.0 then cos_core x else -1.0 *. (cos_core x))
+  else
+    let v = 1.57079633 -. x in
+    let s = sin_core v in
+    if flag > 0.0 then s else -1.0 *. s
+in
+
+let rec sin x = if x >= 0.0 then sin_sub x 1.0 else sin_sub (0.0 -. x) (-1.0) in
+
+let rec cos x = if x >= 0.0 then cos_sub x 1.0 else cos_sub (0.0 -. x) 1.0 in
 
 let rec atan_tail x =
   (if (x >= 10.0) then 1.57079633
