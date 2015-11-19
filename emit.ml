@@ -112,7 +112,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      (if x <> "_R_0" then
        file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary (reg x)) (int_to_binary i 16 "")
      else
-       file := !file ^ "11111111111111111111111111111111\n")
+       file := !file ^ "00000000000000000000000000000000\n")
   | (NonTail(x), Li(i)) ->
       let n = i lsr 16 in
       let m = i lxor (n lsl 16) in
