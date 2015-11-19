@@ -5,6 +5,7 @@ let rec fiszero f = (f = 0.0) in
 let rec fhalf f = f *. 0.5 in
 let rec fsqr f = f *. f in
 let rec fneg f = 0.0 -. f in
+let rec print_newline _ = print_char 10 in
 
 let rec divide10 i res ten =
   if i < (ten + 10) then

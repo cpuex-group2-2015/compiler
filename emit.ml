@@ -176,9 +176,15 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "011111%s%s%s10000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
      address := !address + step * 2
   | (NonTail(x), Slw(y, V(z))) ->
-     Printf.fprintf oc "\tslw\t%s, %s, %s\n" (reg x) (reg y) (reg z)
+     Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+     file := !file ^ Printf.sprintf "011111%s%s%s00000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
+     address := !address + step
   | (NonTail(x), Slw(y, C(z))) ->
-     Printf.fprintf oc "\tslwi\t%s, %s, %d\n" (reg x) (reg y) z
+     Printf.fprintf oc "\tli\t%s, %d\n" reg_tmp z;
+     Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) reg_tmp;
+     file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary reg_tmp) (int_to_binary z 16 "");
+     file := !file ^ Printf.sprintf "011111%s%s%s00000110000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
+     address := !address + step * 2
   | (NonTail(x), Lwz(y, V(z))) ->
      Printf.fprintf oc "\tldx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
      file := !file ^ Printf.sprintf "011111%s%s%s00000101110\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
@@ -444,7 +450,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       address := !address + step
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
-    Printf.fprintf oc "\t%s\tcr7, %s\n" bn b_else;
+    Printf.fprintf oc "\t%s\t%s\n" bn b_else;
     file := !file ^ Printf.sprintf "%s%s\n" (br_to_binary bn) b_else;
     address := !address + step;
     let stackset_back = !stackset in
@@ -456,7 +462,7 @@ and g'_tail_if oc e1 e2 b bn =
 and g'_non_tail_if oc dest e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
-    Printf.fprintf oc "\t%s\tcr7, %s\n" bn b_else;
+    Printf.fprintf oc "\t%s\t%s\n" bn b_else;
     file := !file ^ Printf.sprintf "%s%s\n" (br_to_binary bn) b_else;
     address := !address + step;
     let stackset_back = !stackset in
