@@ -23,7 +23,7 @@ let int_to_binary int digit res =
   if int < 0 then (int_to_minus_binary (-int) digit) else (int_to_binary' int digit res)
 
 let reg_to_binary reg =
-  let ir = String.index reg 'r' in
+  let ir = (try String.index reg 'r' with _ -> String.index reg 'f') in
   let start = ir + 1 in
   let length = (String.length reg) - start in
   int_to_binary (int_of_string (String.sub reg start length)) 5 ""
@@ -346,6 +346,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
   | (NonTail(z), IfLE(x, C(y), e1, e2)) ->
      Printf.fprintf oc "\tcmpi\t%s, %d\n" (reg x) y;
      file := !file ^ Printf.sprintf "00101100000%s%s\n" (reg_to_binary (reg x)) (int_to_binary y 16 "");
+     address := !address + step;
      g'_non_tail_if oc (NonTail(z)) e1 e2 "ble" "bgt"
   | (NonTail(z), IfGE(x, V(y), e1, e2)) ->
      Printf.fprintf oc "\tcmp\t%s, %s\n" (reg x) (reg y);
@@ -419,28 +420,28 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       address := !address + step;
       g'_args oc [] ys zs;
       let ss = stacksize () in
-	Printf.fprintf oc "\tst\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
-	file := !file ^ Printf.sprintf "100100%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
-	Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_binary ss 16 "");
-	Printf.fprintf oc "\tbl\t%d\n" (Hashtbl.find address_list x);
-	file := !file ^ Printf.sprintf "0100101000000000%s\n" (int_to_binary (Hashtbl.find address_list x) 16 "");
-	Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
-	file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_minus_binary ss 16);
-	Printf.fprintf oc "\tld\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
-	file := !file ^ Printf.sprintf "100000%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
-	address := !address + step * 5;
-	(if List.mem a allregs && a <> regs.(0) then
-	  (Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0));
-	   file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg a)) (reg_to_binary (reg regs.(0))) (reg_to_binary (reg regs.(0)));
-	   address := !address + step)
-	 else if List.mem a allfregs && a <> fregs.(0) then
-	  (Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
-	   file := !file ^ Printf.sprintf "111111%s00000%s00010010000\n" (reg_to_binary (reg a)) (reg_to_binary (reg fregs.(0)));
-	   address := !address + step));
-	Printf.fprintf oc "\tmtlr\t%s\n" reg_tmp;
-	file := !file ^ Printf.sprintf "01111100000%s0000001110100110\n" (reg_to_binary reg_tmp);
-	address := !address + step
+      Printf.fprintf oc "\tst\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+      file := !file ^ Printf.sprintf "100100%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
+      Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
+      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_binary ss 16 "");
+      Printf.fprintf oc "\tbl\t%d\n" (Hashtbl.find address_list x);
+      file := !file ^ Printf.sprintf "0100101000000000%s\n" (int_to_binary (Hashtbl.find address_list x) 16 "");
+      Printf.fprintf oc "\tsubi\t%s, %s, %d\n" reg_sp reg_sp ss;
+      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_sp) (reg_to_binary reg_sp) (int_to_minus_binary ss 16);
+      Printf.fprintf oc "\tld\t%s, %d(%s)\n" reg_tmp (ss - 4) reg_sp;
+      file := !file ^ Printf.sprintf "100000%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_sp) (int_to_binary (ss - 4) 16 "");
+      address := !address + step * 5;
+      (if List.mem a allregs && a <> regs.(0) then
+	 (Printf.fprintf oc "\tmr\t%s, %s\n" (reg a) (reg regs.(0));
+	  file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg a)) (reg_to_binary (reg regs.(0))) (reg_to_binary (reg regs.(0)));
+	  address := !address + step)
+       else if List.mem a allfregs && a <> fregs.(0) then
+	 (Printf.fprintf oc "\tfmr\t%s, %s\n" (reg a) (reg fregs.(0));
+	  file := !file ^ Printf.sprintf "111111%s00000%s00010010000\n" (reg_to_binary (reg a)) (reg_to_binary (reg fregs.(0)));
+	  address := !address + step));
+      Printf.fprintf oc "\tmtlr\t%s\n" reg_tmp;
+      file := !file ^ Printf.sprintf "01111100000%s0000001110100110\n" (reg_to_binary reg_tmp);
+      address := !address + step
 and g'_tail_if oc e1 e2 b bn =
   let b_else = Id.genid (b ^ "_else") in
     Printf.fprintf oc "\t%s\tcr7, %s\n" bn b_else;
@@ -501,7 +502,7 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 (* let f oc (Prog(data, fundefs, e)) = *)
 let f oc bc dc zc p =
-  (*show_asm_prog "  " p;*)
+  show_asm_prog "  " p;
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
