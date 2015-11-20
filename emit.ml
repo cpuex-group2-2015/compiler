@@ -138,7 +138,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       address := !address + step * 2
   | (NonTail(x), Mr(y)) when x = y -> ()
   | (NonTail(x), Mr(y)) ->
-     Printf.fprintf oc "\tmr\t%s, %s\n" (reg x) (reg y);
+     Printf.fprintf oc "\tor\t%s, %s, %s\n" (reg x) (reg y) (reg y);
      file := !file ^ Printf.sprintf "011111%s%s%s01101111000\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg y));
      address := !address + step
   | (NonTail(x), Neg(y)) ->
@@ -190,7 +190,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "011111%s%s%s00000101110\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
      address := !address + step
   | (NonTail(x), Lwz(y, C(z))) ->
-     Printf.fprintf oc "\tlwz\t%s, %d(%s)\n" (reg x) z (reg y);
+     (if z = 0 then Printf.fprintf oc "\tld\t%s, %s\n" (reg x) (reg y) else Printf.fprintf oc "\tld\t%s, %d(%s)\n" (reg x) z (reg y));
      file := !file ^ Printf.sprintf "100000%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_binary z 16 "");
      address := !address + step
   | (NonTail(_), Stw(x, y, V(z))) ->
@@ -198,7 +198,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "011111%s%s%s00100101110\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
      address := !address + step
   | (NonTail(_), Stw(x, y, C(z))) ->
-     Printf.fprintf oc "\tst\t%s, %d(%s)\n" (reg x) z (reg y);
+     (if z = 0 then Printf.fprintf oc "\tst\t%s, %s\n" (reg x) (reg y) else Printf.fprintf oc "\tst\t%s, %d(%s)\n" (reg x) z (reg y));
      file := !file ^ Printf.sprintf "100100%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_binary z 16 "");
      address := !address + step
   | (NonTail(x), FMr(y)) when x = y -> ()
