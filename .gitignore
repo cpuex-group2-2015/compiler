@@ -1,6 +1,5 @@
 .DS_Store
 
-target.ml
 fib.ml
 test.ml
 
