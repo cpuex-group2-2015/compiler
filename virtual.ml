@@ -23,7 +23,7 @@ let expand xts ini addf addi =
     xts
     ini
     (fun (offset, acc) x -> let offset = align offset in
-       (offset + 8, addf x offset acc))
+       (offset + 4, addf x offset acc))
     (fun (offset, acc) x t -> (offset + 4, addi x t offset acc))
 
 let rec g env = function (* 式の仮想マシンコード生成 *)
@@ -155,4 +155,4 @@ let f (Closure.Prog (fundefs, e)) =
   data := [];
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
-    Prog (!data, fundefs, e)
+  Prog (!data, fundefs, e)
