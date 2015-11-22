@@ -109,89 +109,88 @@ let rec arg_list_to_string string list =
   | [] -> string
   | (x,t)::ys -> arg_list_to_string (string ^ x ^ " ") ys
 
-let rec show_content indent t = match t with
-  | Unit -> print_string (indent ^ "()")
-  | Int(i) -> print_string (string_of_int i)
-  | Float(f) -> print_string (string_of_float f)
-  | Neg(x) | FNeg(x) -> print_string ("- " ^ x)
-  | Add(x, y) -> print_string (x ^ " + " ^ y)
-  | Sub(x, y) -> print_string (x ^ " - " ^ y)
-  | Mul(x, y) -> print_string (x ^ " * " ^ y)
-  | Div(x, y) -> print_string (x ^ " / " ^ y)
-  | FAdd(x, y) -> print_string (x ^ " .+ " ^ y)
-  | FSub(x, y) -> print_string (x ^ " .- " ^ y)
-  | FMul(x, y) -> print_string (x ^ " .* " ^ y)
-  | FDiv(x, y) -> print_string (x ^ " ./ " ^ y)
+let rec show_content f indent t = match t with
+  | Unit -> Printf.fprintf f "%s" (indent ^ "()")
+  | Int(i) -> Printf.fprintf f "%s" (string_of_int i)
+  | Float(ff) -> Printf.fprintf f "%s" (string_of_float ff)
+  | Neg(x) | FNeg(x) -> Printf.fprintf f "%s" ("- " ^ x)
+  | Add(x, y) -> Printf.fprintf f "%s" (x ^ " + " ^ y)
+  | Sub(x, y) -> Printf.fprintf f "%s" (x ^ " - " ^ y)
+  | Mul(x, y) -> Printf.fprintf f "%s" (x ^ " * " ^ y)
+  | Div(x, y) -> Printf.fprintf f "%s" (x ^ " / " ^ y)
+  | FAdd(x, y) -> Printf.fprintf f "%s" (x ^ " .+ " ^ y)
+  | FSub(x, y) -> Printf.fprintf f "%s" (x ^ " .- " ^ y)
+  | FMul(x, y) -> Printf.fprintf f "%s" (x ^ " .* " ^ y)
+  | FDiv(x, y) -> Printf.fprintf f "%s" (x ^ " ./ " ^ y)
   | IfEq(x, y, e1, e2) ->
-     print_string (indent ^ "if " ^ x ^ " = " ^ y ^ " then\n");
+     Printf.fprintf f "%s" (indent ^ "if " ^ x ^ " = " ^ y ^ " then\n");
      (match e1 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string (indent ^ "  "); show_content "" e1; print_string "\n"
-      | _ -> show_content (indent ^ "  ") e1);
-     print_string (indent ^ "else\n");
+        Printf.fprintf f "%s" (indent ^ "  "); show_content f "" e1; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f (indent ^ "  ") e1);
+     Printf.fprintf f "%s" (indent ^ "else\n");
      (match e2 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string (indent ^ "  "); show_content "" e2; print_string "\n"
-      | _ -> show_content (indent ^ "  ") e2)
+        Printf.fprintf f "%s" (indent ^ "  "); show_content f "" e2; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f (indent ^ "  ") e2)
   | IfLE(x, y, e1, e2) ->
-     print_string (indent ^ "if " ^ x ^ " < " ^ y ^ " then\n");
+     Printf.fprintf f "%s" (indent ^ "if " ^ x ^ " < " ^ y ^ " then\n");
      (match e1 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string (indent ^ "  "); show_content "" e1; print_string "\n"
-      | _ -> show_content (indent ^ "  ") e1);
-     print_string (indent ^ "else\n");
+        Printf.fprintf f "%s" (indent ^ "  "); show_content f "" e1; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f (indent ^ "  ") e1);
+     Printf.fprintf f "%s" (indent ^ "else\n");
      (match e2 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string (indent ^ "  "); show_content "" e2; print_string "\n"
-      | _ -> show_content (indent ^ "  ") e2)
+        Printf.fprintf f "%s" (indent ^ "  "); show_content f "" e2; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f (indent ^ "  ") e2)
   | Let((x, t), e1, e2) ->
-     print_string (indent ^ "let " ^ x ^ " = ");
+     Printf.fprintf f "%s" (indent ^ "let " ^ x ^ " = ");
      (match e1 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        show_content "" e1; print_string " in\n"
-      | _ -> print_string "\n"; show_content (indent ^ "  ") e1; print_string (indent ^ "in\n"));
+        show_content f "" e1; Printf.fprintf f "%s" " in\n"
+      | _ -> Printf.fprintf f "%s" "\n"; show_content f (indent ^ "  ") e1; Printf.fprintf f "%s" (indent ^ "in\n"));
      (match e2 with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string indent; show_content "" e2; print_string "\n"
-      | _ -> show_content indent e2)
-  | Var(x) -> print_string x
+        Printf.fprintf f "%s" indent; show_content f "" e2; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f indent e2)
+  | Var(x) -> Printf.fprintf f "%s" x
   | MakeCls((x, t), { entry=Id.L(l); actual_fv=xs }, body) ->
-     print_string (indent ^ "make_closure " ^ x ^ "=(" ^ l ^ ",(" ^ (String.concat "," xs) ^ ")) in\n");
-     show_content indent body
-  | AppCls(x, ys) -> print_string ("apply_closure(" ^ x ^ ", " ^ (String.concat "," ys) ^ ")")
-  | AppDir(Id.L(l), ys) -> print_string ("apply_direct(" ^ l ^ ", " ^ (String.concat "," ys) ^ ")")
-  | Tuple(xs) -> print_string ("(" ^ (String.concat "," xs) ^ ")")
+     Printf.fprintf f "%s" (indent ^ "make_closure " ^ x ^ "=(" ^ l ^ ",(" ^ (String.concat "," xs) ^ ")) in\n");
+     show_content f indent body
+  | AppCls(x, ys) -> Printf.fprintf f "%s" ("apply_closure(" ^ x ^ ", " ^ (String.concat "," ys) ^ ")")
+  | AppDir(Id.L(l), ys) -> Printf.fprintf f "%s" ("apply_direct(" ^ l ^ ", " ^ (String.concat "," ys) ^ ")")
+  | Tuple(xs) -> Printf.fprintf f "%s" ("(" ^ (String.concat "," xs) ^ ")")
   | LetTuple(args, x, e) ->
-     print_string (indent ^ "let (" ^ (arg_list_to_string "" args) ^ ") = " ^ x ^ " in\n");
+     Printf.fprintf f "%s" (indent ^ "let (" ^ (arg_list_to_string "" args) ^ ") = " ^ x ^ " in\n");
      (match e with
       | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-        print_string indent; show_content "" e; print_string "\n"
-      | _ -> show_content (indent ^ "  ") e)
-  | Get(x, y) -> print_string (x ^ ".(" ^ y ^ ")")
-  | Put(x, y, z) -> print_string (x ^ ".(" ^ y ^ ") <- " ^ z)
-  | ExtArray(Id.L(l)) -> print_string (indent ^ "ExtArray " ^ l ^ "\n")
+        Printf.fprintf f "%s" indent; show_content f "" e; Printf.fprintf f "%s" "\n"
+      | _ -> show_content f (indent ^ "  ") e)
+  | Get(x, y) -> Printf.fprintf f "%s" (x ^ ".(" ^ y ^ ")")
+  | Put(x, y, z) -> Printf.fprintf f "%s" (x ^ ".(" ^ y ^ ") <- " ^ z)
+  | ExtArray(Id.L(l)) -> Printf.fprintf f "%s" (indent ^ "ExtArray " ^ l ^ "\n")
 
-let show_fundef { name = (Id.L(x), t); args = args; formal_fv = fvs; body } =
-  print_string ("\tFunction " ^ x ^ " (" ^ (arg_list_to_string " "args) ^ ")\n");
-  print_string ("\t  Free variables: (" ^ (arg_list_to_string " " fvs) ^ ")\n");
+let show_fundef f { name = (Id.L(x), t); args = args; formal_fv = fvs; body } =
+  Printf.fprintf f "%s" ("\tFunction " ^ x ^ " (" ^ (arg_list_to_string " "args) ^ ")\n");
+  Printf.fprintf f "%s" ("\t  Free variables: (" ^ (arg_list_to_string " " fvs) ^ ")\n");
   (match body with
    | Int(_) | Float(_) | Neg(_) | Add(_, _) | Sub(_, _) | Mul(_, _) | Div(_, _) | FAdd(_, _) | FSub(_, _) | FMul(_, _) | FDiv(_, _) | Var(_) | Tuple(_) | Get(_, _) | Put(_, _, _) | AppCls(_, _) | AppDir(_, _) | Unit ->
-     print_string "\t  "; show_content "" body; print_string "\n"
-   | _ -> show_content "\t  " body)
+     Printf.fprintf f "%s" "\t  "; show_content f "" body; Printf.fprintf f "%s" "\n"
+   | _ -> show_content f "\t  " body)
 
-let show_prog (Prog(fs, body)) =
-  print_string "\t-----Top Level Functions-----\n";
-  List.iter show_fundef fs;
-  print_string "\t-----Main Routine-----\n";
-  show_content "\t" body;
-  print_string "=======================\n"
+let show_prog f (Prog(fs, body)) =
+  Printf.fprintf f "\t-----Top Level Functions-----\n";
+  List.iter (show_fundef f)fs;
+  Printf.fprintf f "\t-----Main Routine-----\n";
+  show_content f "\t" body;
+  Printf.fprintf f "=======================\n"
 
 let f e =
   toplevel := [];
   let e' = g M.empty S.empty e in
   let res = Prog(List.rev !toplevel, e') in
-(*  print_string "=======================\n";
-  print_string "\tClosure.Prog\n";
-  print_string "=======================\n";
-  show_prog res;*)
+  let clochan = open_out ("result/closure.txt") in
+  show_prog clochan res;
+  close_out clochan;
   res

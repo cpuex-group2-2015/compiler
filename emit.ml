@@ -608,6 +608,7 @@ let f oc bc dc zc p =
     if (String.sub key 0 2) <> "l." then
       Printf.fprintf hashchan "%s %d\n" key value
     else () in
-  Hashtbl.iter write_to_hash_txt address_list
+  Hashtbl.iter write_to_hash_txt address_list;
+  close_out hashchan;
 
-  (*show_asm_prog "  " p*)
+(*show_asm_prog "  " p*)
