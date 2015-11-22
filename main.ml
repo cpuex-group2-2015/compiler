@@ -39,10 +39,15 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     let libstring = String.create liblength in
     really_input libchan libstring 0 liblength;
     close_in libchan;
+    let glchan = open_in ("lib/globals.ml") in
+    let gllength = in_channel_length glchan in
+    let glstring = String.create gllength in
+    really_input glchan glstring 0 gllength;
+    close_in glchan;
     let inlength = in_channel_length inchan in
     let instring = String.create inlength in
     really_input inchan instring 0 inlength;
-    lexbuf outchan binchan datachan zerochan (Lexing.from_string (libstring ^ instring));
+    lexbuf outchan binchan datachan zerochan (Lexing.from_string (libstring ^ glstring ^ instring));
     close_in inchan;
     close_out outchan;
     close_out binchan;
