@@ -256,8 +256,9 @@ let rec atan x =
 let rec read_int_sub res sign =
   let x = read_byte () in
   if x = 32 then (if sign = 1 then res else (-res))
+  else if x = 9 then (if sign = 1 then res else (-res))
   else if x = 10 then (if sign = 1 then res else (-res))
-  else let x = (x - 48) in (read_int_sub (x + (times10 res)) sign)
+  else (let x = (x - 48) in (read_int_sub (x + (times10 res)) sign))
 in
 
 let rec read_int_pre _ =
@@ -268,12 +269,10 @@ let rec read_int_pre _ =
   else read_int_sub (x-48) 1
 in
 
-let rec read_int _ = read_int_pre () in
-
 let rec read_float_sub res sign dot =
   let x = read_byte () in
-  if x = 32 then (if sign = 1.0 then res else (0.0 -. res))
-  else if x = 45 then (read_float_sub res (-1.0) dot)
+  if x = 32 then (if sign > 0.0 then res else (0.0 -. res))
+  else if x = 10 then (if sign > 0.0 then res else (0.0 -. res))
   else if x = 46 then (read_float_sub res sign 0.1)
   else
     let f = float_of_int (x - 48) in
@@ -281,4 +280,16 @@ let rec read_float_sub res sign dot =
     else (read_float_sub (res *. 10.0 +. f) sign dot)
 in
 
-let rec read_float _ = read_float_sub 0.0 1.0 1.0 in
+let rec read_float_pre _ =
+  let x = read_byte () in
+  if x = 32 then read_float_pre ()
+  else if x = 10 then read_float_pre ()
+  else if x = 45 then read_float_sub 0.0 (-1.0) 1.0
+  else read_float_sub (float_of_int (x - 48)) 1.0 1.0
+in
+
+(*let rec read_int _ = let x = read_int_pre () in print_char 42; print_int x; print_char 42; print_char 10; x in*)
+let rec read_int _ = read_int_pre () in
+
+(*let rec read_float _ = let f = read_float_pre () in print_char 42; print_int (truncate f); print_char 42; print_char 46; print_char 10; f in*)
+let rec read_float _ = read_float_pre () in

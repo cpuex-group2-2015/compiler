@@ -528,10 +528,10 @@ let f oc bc dc zc p =
        data));
 
   write_byte dc (Str.global_replace (Str.regexp "\n") "" !file);
-  Printf.fprintf oc "\tli\tr3, 10000\n";
+  Printf.fprintf oc "\tlis\tr3, stack_pointer\n";
   Printf.fprintf oc "\tli\tr4, %d\n" !heap_pointer;
   Printf.fprintf oc "\tb\t_main_entry_\n";
-  file := "00111000011000000010011100010000\n";
+  file := "00111100011000000000000000001111\n";
   file := !file ^ "0011100010000000" ^ (int_to_binary !heap_pointer 16 "") ^ "\n";
   file := !file ^ "0100100000000000_main_entry_\n";
   address := !address + step * 3;
