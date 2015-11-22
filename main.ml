@@ -23,12 +23,16 @@ let lexbuf outchan binchan datachan zerochan l = (* バッファをコンパイ�
 
 let string s = lexbuf stdout stdout stdout stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
+let deal_with_file_name f =
+  if (String.sub f (String.length f - 3) 3) = ".ml" then String.sub f 0 (String.length f - 3) else f
+
 let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
-  let inchan = open_in (f ^ ".ml") in
-  let outchan = open_out ("result/" ^ f ^ ".s") in
-  let binchan = open_out ("result/" ^ f ^ ".bin") in
-  let datachan = open_out ("result/" ^ f ^ ".data") in
-  let zerochan = open_out ("result/" ^ f ^ ".zero") in
+  let fname = deal_with_file_name f in
+  let inchan = open_in (fname ^ ".ml") in
+  let outchan = open_out ("result/" ^ fname ^ ".s") in
+  let binchan = open_out ("result/" ^ fname ^ ".bin") in
+  let datachan = open_out ("result/" ^ fname ^ ".data") in
+  let zerochan = open_out ("result/" ^ fname ^ ".zero") in
   try
     let libchan = open_in ("lib/lib.ml") in
     let liblength = in_channel_length libchan in
