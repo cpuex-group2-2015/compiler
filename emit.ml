@@ -79,13 +79,18 @@ let reg r =
   else r
 
 let load_label r label =
-  "\tlis\t" ^ (reg r) ^ ", ha16(" ^ label ^ ")\n" ^
-  "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lo16(" ^ label ^ ")\n"
+  let res = ("\tlis\t" ^ (reg r) ^ ", ha16(" ^ label ^ ")\n" ^ "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lo16(" ^ label ^ ")\n") in
+  if (Hashtbl.find address_list label) > 32767 then (res ^ "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lolo16(" ^ label ^ ")\n") else res
 
 let load_label_binary r label =
   let rb = reg_to_binary (reg r) in
-  let lb = int_to_binary (Hashtbl.find address_list label) 32 "" in
-  Printf.sprintf "001111%s00000%s\n001110%s%s%s\n" rb (String.sub lb 0 16) rb rb (String.sub lb 16 16)
+  let ad = Hashtbl.find address_list label in
+  if ad < 32768 then
+    let lb = int_to_binary ad 32 "" in
+    Printf.sprintf "001111%s00000%s\n001110%s%s%s\n" rb (String.sub lb 0 16) rb rb (String.sub lb 16 16)
+  else
+    let lbb = int_to_binary (ad/2) 32 "" in
+    Printf.sprintf "001111%s00000%s\n001110%s%s%s\n001110%s%s%s\n" rb (String.sub lbb 0 16) rb rb (String.sub lbb 16 16) rb rb (String.sub lbb 16 16)
 
 (* 関数呼び出しのために引数を並べ替える (register shuffling) *)
 let rec shuffle sw xys =
