@@ -508,7 +508,6 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 (* let f oc (Prog(data, fundefs, e)) = *)
 let f oc bc dc zc p =
-  show_asm_prog "  " p;
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
@@ -605,3 +604,5 @@ let f oc bc dc zc p =
       Printf.fprintf hashchan "%s %d\n" key value
     else () in
   Hashtbl.iter write_to_hash_txt address_list
+
+  (*show_asm_prog "  " p*)

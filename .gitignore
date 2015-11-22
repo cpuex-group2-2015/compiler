@@ -15,3 +15,6 @@ parser.mli
 lexer.ml
 ._bcdi/
 ._d/
+
+log
+clo
