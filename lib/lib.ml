@@ -75,7 +75,7 @@ let rec sqrt_sub x a =
     x
   else
     let xn = (x +. a/.x) *. 0.5 in
-    if ((x -. xn) < 0.00001) then x else (sqrt_sub xn a)
+    if ((fabs (x -. xn)) < 0.00001) then x else (sqrt_sub xn a)
 in
 
 let rec sqrt a = sqrt_sub a a in
