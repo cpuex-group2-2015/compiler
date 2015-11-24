@@ -43,7 +43,7 @@ let rec float_of_int i =
     (if (i < 0) then (0.0 -. (exp_man_of_int 0 1 (-i))) else 0.0)
 in
 
-let rec print_float_tail x count =
+(*let rec print_float_tail x count =
   if count < 0 then () else
     let ti = int_of_float_sub x in
     (if ti < 10 then print_char (ti + 48) else
@@ -51,14 +51,12 @@ let rec print_float_tail x count =
       print_int m));
     print_float_tail (x*.10.0) (count-1)
 in
-
 let rec print_float_sub x =
   let d = int_of_float_sub x in
   print_int d; print_char 46;
   print_float_tail (x*.10.0) 4
 in
-
-let rec print_float x = if (x >= 0.0) then print_float_sub x else (print_char 45; print_float_sub (0.0-.x)) in
+let rec print_float x = if (x >= 0.0) then print_float_sub x else (print_char 45; print_float_sub (0.0-.x)) in*)
 
 let rec truncate x = int_of_float x in
 
@@ -303,3 +301,5 @@ let rec read_int _ = read_int_pre () in
 
 (*let rec read_float _ = let f = read_float_pre () in print_char 42; print_int (truncate f); print_char 42; print_char 46; print_char 10; f in*)
 let rec read_float _ = read_float_pre () in
+
+let rec print_float f = print_float_bit f 32 in
