@@ -545,7 +545,9 @@ let f oc bc dc zc p =
   Hashtbl.add address_list "float_of_int_sub" (!address + step * 32);
   Hashtbl.add address_list "read_byte" (!address + step * 40);
   Hashtbl.add address_list "print_char" (!address + step * 42);
-  address := !address + step * 44;
+  Hashtbl.add address_list "print_bit" (!address + step * 44);
+  Hashtbl.add address_list "print_float_bit" (!address + step * 53);
+  address := !address + step * 56;
 
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
@@ -589,8 +591,20 @@ let f oc bc dc zc p =
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "00001000010000000000000000000000\n"; (* recv # read_byte *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
-  file := !file ^ "00000100010000000000000000000000\n"; (* send # print_char*)
+  file := !file ^ "00000100010000000000000000000000\n"; (* send # print_char *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "01110000110000100000000000000001\n"; (* andi # print_bit *)
+  file := !file ^ "00111000110001100000000000110000\n"; (* addi *)
+  file := !file ^ "00000100110000000000000000000000\n"; (* send *)
+  file := !file ^ "00111000110000000000000000000001\n"; (* li *)
+  file := !file ^ "01111100010000100011010000110000\n"; (* sr *)
+  file := !file ^ "00111000101001011111111111111111\n"; (* addi *)
+  file := !file ^ "01111000000001010000000000000000\n"; (* cmp *)
+  file := !file ^ "0100000101000000" ^ (int_to_binary (Hashtbl.find address_list "print_bit") 16 "") ^ "\n"; (* bgt *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "01111100101000100001001101111000\n"; (* or *)
+  file := !file ^ "01011000010000000000000000000000\n"; (* mfftg *)
+  file := !file ^ "0100100000000000" ^ (int_to_binary (Hashtbl.find address_list "print_bit") 16 "") ^ "\n"; (* b *)
 
   List.iter (fun fundef -> h oc fundef) fundefs;
   stackset := S.empty;

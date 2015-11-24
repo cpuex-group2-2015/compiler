@@ -42,3 +42,15 @@
 	blr
 	send	r2		# print_char
 	blr
+	andi	r6, r2, 1	# print_bit
+	addi	r6, r6, 48	# r2 r5 -> ()
+	send	r6
+	li	r6, 1
+	sr	r2, r2, r6
+	addi	r5, r5, -1
+	cmp	r5, r0
+	bgt	print_bit
+	blr
+	or	r5, r2, r2	# print_float_bit
+	mfftg	r2, f0		# f0 r2 -> ()
+	b	print_bit
