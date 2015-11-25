@@ -68,15 +68,15 @@ let rec fabs x =
   if x > 0.0 then x else (0.0 -. x)
 in
 
-let rec sqrt_sub x a =
+(*let rec sqrt_sub x a =
   if ((fabs (a -. x *. x)) < 0.00001) then
     x
   else
     let xn = (x +. a/.x) *. 0.5 in
     if ((fabs (x -. xn)) < 0.00001) then x else (sqrt_sub xn a)
-in
+in*)
 
-let rec sqrt a = sqrt_sub a a in
+let rec sqrt a = sqrt_sub a in
 
 let rec cos_core x =
   let x2 = x*.x in

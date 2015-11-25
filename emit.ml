@@ -547,7 +547,8 @@ let f oc bc dc zc p =
   Hashtbl.add address_list "print_char" (!address + step * 42);
   Hashtbl.add address_list "print_bit" (!address + step * 44);
   Hashtbl.add address_list "print_float_bit" (!address + step * 53);
-  address := !address + step * 56;
+  Hashtbl.add address_list "sqrt_sub" (!address + step * 56);
+  address := !address + step * 58;
 
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
@@ -605,6 +606,8 @@ let f oc bc dc zc p =
   file := !file ^ "01111100101000100001001101111000\n"; (* or *)
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg *)
   file := !file ^ "0100100000000000" ^ (int_to_binary (Hashtbl.find address_list "print_bit") 16 "") ^ "\n"; (* b *)
+  file := !file ^ "11111100000000000000000000101100\n"; (* sqrt_sub *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
 
   List.iter (fun fundef -> h oc fundef) fundefs;
   stackset := S.empty;

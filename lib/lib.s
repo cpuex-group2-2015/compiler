@@ -54,3 +54,5 @@
 	or	r5, r2, r2	# print_float_bit
 	mfftg	r2, f0		# f0 r2 -> ()
 	b	print_bit
+	fsqrt	f0, f0		# sqrt_sub
+	blr			# f0 -> f0
