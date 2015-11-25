@@ -4,7 +4,7 @@ let rec fisneg f = f < 0.0 in
 let rec fiszero f = (f = 0.0) in
 let rec fhalf f = f *. 0.5 in
 let rec fsqr f = f *. f in
-let rec fneg f = 0.0 -. f in
+let rec fneg f = fneg_sub f in
 let rec print_newline _ = print_char 10 in
 
 let rec divide10 i res ten =
@@ -43,39 +43,13 @@ let rec float_of_int i =
     (if (i < 0) then (0.0 -. (exp_man_of_int 0 1 (-i))) else 0.0)
 in
 
-(*let rec print_float_tail x count =
-  if count < 0 then () else
-    let ti = int_of_float_sub x in
-    (if ti < 10 then print_char (ti + 48) else
-     (let (_, m) = divide10 (int_of_float_sub x) 1 10 in
-      print_int m));
-    print_float_tail (x*.10.0) (count-1)
-in
-let rec print_float_sub x =
-  let d = int_of_float_sub x in
-  print_int d; print_char 46;
-  print_float_tail (x*.10.0) 4
-in
-let rec print_float x = if (x >= 0.0) then print_float_sub x else (print_char 45; print_float_sub (0.0-.x)) in*)
-
 let rec truncate x = int_of_float x in
 
 let rec floor_int x = if x >= 0.0 then (int_of_float_sub x) else (-(int_of_float_sub (0.0 -. x)) - 1) in
 
 let rec floor x = float_of_int (floor_int x) in
 
-let rec fabs x =
-  if x > 0.0 then x else (0.0 -. x)
-in
-
-(*let rec sqrt_sub x a =
-  if ((fabs (a -. x *. x)) < 0.00001) then
-    x
-  else
-    let xn = (x +. a/.x) *. 0.5 in
-    if ((fabs (x -. xn)) < 0.00001) then x else (sqrt_sub xn a)
-in*)
-
+let rec fabs x = fabs_sub x in
 let rec sqrt a = sqrt_sub a in
 
 let rec cos_core x =

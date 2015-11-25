@@ -55,4 +55,8 @@
 	mfftg	r2, f0		# f0 r2 -> ()
 	b	print_bit
 	fsqrt	f0, f0		# sqrt_sub
-	blr			# f0 -> f0
+	blr
+	fabs	f0, f0		# fabs_sub
+	blr
+	fneg	f0, f0		# fneg_sub
+	blr
