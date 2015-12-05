@@ -6,7 +6,7 @@ let file = ref ""
 let address = ref 0
 let address_list = Hashtbl.create 0
 let heap_pointer = ref 0
-let step = 4
+let step = 1
 
 let rec int_to_binary' int digit res =
   if int > 0 then
