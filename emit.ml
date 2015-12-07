@@ -29,10 +29,10 @@ let reg_to_binary reg =
   int_to_binary (int_of_string (String.sub reg start length)) 5 ""
 
 let br_to_binary b = match b with
-  | "blt" -> "0100000100000000";
-  | "bgt" -> "0100000101000000";
-  | "beq" -> "0100000110000000";
-  | "bne" -> "0100000010000000";
+  | "blt" -> "0100000111000000";
+  | "bgt" -> "0100000110000000";
+  | "beq" -> "0100000101000000";
+  | "bne" -> "0100000001000000";
   | x -> failwith ("branch_to_binary failed with " ^ x)
 
 let byte_to_int s =
@@ -565,7 +565,7 @@ let f oc bc dc zc p =
   file := !file ^ "01111100010000100011001000010100\n"; (* add *)
   file := !file ^ "00111000101001011111111101101010\n"; (* subi *)
   file := !file ^ "01111000000001010000000000000000\n"; (* cmp *)
-  file := !file ^ "0100000100000000" ^ (int_to_binary (Hashtbl.find address_list "_first_label") 16 "") ^ "\n"; (* blt *)
+  file := !file ^ "0100000111000000" ^ (int_to_binary (Hashtbl.find address_list "_first_label") 16 "") ^ "\n"; (* blt *)
   file := !file ^ "01111100010000100010100000110000\n"; (* sl *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "01111100101001010000000011010000\n"; (* neg # _first_label *)
@@ -574,7 +574,7 @@ let f oc bc dc zc p =
   file := !file ^ "01111100110000100001001101111000\n"; (* mr # create_array*)
   file := !file ^ "01111100010001000010001101111000\n"; (* mr *)
   file := !file ^ "01111000000001100000000000000000\n"; (* cmp # _array_loop *)
-  file := !file ^ "0100000110000000" ^ (int_to_binary (Hashtbl.find address_list "_second_label") 16 "") ^ "\n"; (* beq *)
+  file := !file ^ "0100000101000000" ^ (int_to_binary (Hashtbl.find address_list "_second_label") 16 "") ^ "\n"; (* beq *)
   file := !file ^ "10010000101001000000000000000000\n"; (* st *)
   file := !file ^ "00111000100001000000000000000100\n"; (* addi *)
   file := !file ^ "00111000110001101111111111111111\n"; (* subi *)
@@ -603,7 +603,7 @@ let f oc bc dc zc p =
   file := !file ^ "01111100010000100011010000110000\n"; (* sr *)
   file := !file ^ "00111000101001011111111111111111\n"; (* addi *)
   file := !file ^ "01111000000001010000000000000000\n"; (* cmp *)
-  file := !file ^ "0100000101000000" ^ (int_to_binary (Hashtbl.find address_list "print_bit") 16 "") ^ "\n"; (* bgt *)
+  file := !file ^ "0100000110000000" ^ (int_to_binary (Hashtbl.find address_list "print_bit") 16 "") ^ "\n"; (* bgt *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
   file := !file ^ "01111100101000100001001101111000\n"; (* or *)
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg *)
