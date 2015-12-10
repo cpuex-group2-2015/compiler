@@ -165,9 +165,10 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "011111%s%s%s01000010100\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary reg_tmp);
      address := !address + step * 2
   | (NonTail(x), Sub(y, C(z))) ->
-     Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
-     file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
-     address := !address + step
+     if ((z <> 0) || (x <> y)) then
+       (Printf.fprintf oc "\tsubi\t%s, %s, %d\n" (reg x) (reg y) z;
+	file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_minus_binary z 16);
+	address := !address + step)
   | (NonTail(x), Mul(y, C(z))) ->
      Printf.fprintf oc "\tli\t%s, %d\n" reg_tmp (log2 z);
      Printf.fprintf oc "\tsl\t%s, %s, %s\n" (reg x) (reg y) reg_tmp;
