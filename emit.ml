@@ -233,11 +233,11 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      file := !file ^ Printf.sprintf "111111%s%s%s00000100100\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
      address := !address + step
   | (NonTail(x), Lfd(y, V(z))) ->
-     Printf.fprintf oc "\tlfx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
+     Printf.fprintf oc "\tldfx\t%s, %s, %s\n" (reg x) (reg y) (reg z);
      file := !file ^ Printf.sprintf "011111%s%s%s10010101110\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (reg_to_binary (reg z));
      address := !address + step
   | (NonTail(x), Lfd(y, C(z))) ->
-     Printf.fprintf oc "\tlf\t%s, %d(%s)\n" (reg x) z (reg y);
+     Printf.fprintf oc "\tldf\t%s, %d(%s)\n" (reg x) z (reg y);
      file := !file ^ Printf.sprintf "110010%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary (reg y)) (int_to_binary z 16 "");
      address := !address + step
   | (NonTail(_), Stfd(x, y, V(z))) ->
@@ -271,7 +271,7 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
      address := !address + step
   | (NonTail(x), Restore(y)) ->
      assert (List.mem x allfregs);
-     Printf.fprintf oc "\tlf\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
+     Printf.fprintf oc "\tldf\t%s, %d(%s)\n" (reg x) (offset y) reg_sp;
      file := !file ^ Printf.sprintf "110010%s%s%s\n" (reg_to_binary (reg x)) (reg_to_binary reg_sp) (int_to_binary (offset y) 16 "");
      address := !address + step
   (* 末尾だったら計算結果を第一レジスタにセット *)
