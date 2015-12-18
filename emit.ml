@@ -78,20 +78,6 @@ let reg r =
   then String.sub r 1 (String.length r - 1)
   else r
 
-let load_label r label =
-  let res = ("\tlis\t" ^ (reg r) ^ ", ha16(" ^ label ^ ")\n" ^ "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lo16(" ^ label ^ ")\n") in
-  if (Hashtbl.find address_list label) > 32767 then (res ^ "\taddi\t" ^ (reg r) ^ ", " ^ (reg r) ^ ", lolo16(" ^ label ^ ")\n") else res
-
-let load_label_binary r label =
-  let rb = reg_to_binary (reg r) in
-  let ad = Hashtbl.find address_list label in
-  if ad < 32768 then
-    let lb = int_to_binary ad 32 "" in
-    Printf.sprintf "001111%s00000%s\n001110%s%s%s\n" rb (String.sub lb 0 16) rb rb (String.sub lb 16 16)
-  else
-    let lbb = int_to_binary (ad/2) 32 "" in
-    Printf.sprintf "001111%s00000%s\n001110%s%s%s\n001110%s%s%s\n" rb (String.sub lbb 0 16) rb rb (String.sub lbb 16 16) rb rb (String.sub lbb 16 16)
-
 (* 関数呼び出しのために引数を並べ替える (register shuffling) *)
 let rec shuffle sw xys =
   (* remove identical moves *)
@@ -144,10 +130,17 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       file := !file ^ Printf.sprintf "010101%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary reg_tmp);
       address := !address + step * 3
   | (NonTail(x), SetL(Id.L(y))) ->
-      let s = load_label x y in
-      Printf.fprintf oc "%s" s;
-      file := !file ^ (load_label_binary x y);
-      address := !address + step * 2
+      let res = ("\tlis\t" ^ (reg x) ^ ", ha16(" ^ y ^ ")\n" ^ "\taddi\t" ^ (reg x) ^ ", " ^ (reg x) ^ ", lo16(" ^ y ^ ")\n") in
+      Printf.fprintf oc "%s" res;
+      let rb = reg_to_binary (reg x) in
+      let ad = Hashtbl.find address_list y in
+      let lb = int_to_binary ad 32 "" in
+      (if ((String.sub lb 0 16) = (int_to_binary 0 16 "")) then
+	 (file := !file ^ Printf.sprintf "001110%s00000%s\n" rb (String.sub lb 16 16);
+         address := !address + step)
+       else
+	 (file := !file ^ Printf.sprintf "001111%s00000%s\n001110%s%s%s\n" rb (String.sub lb 0 16) rb rb (String.sub lb 16 16);
+         address := !address + step * 2))
   | (NonTail(x), Mr(y)) when x = y -> ()
   | (NonTail(x), Mr(y)) ->
      Printf.fprintf oc "\tor\t%s, %s, %s\n" (reg x) (reg y) (reg y);
