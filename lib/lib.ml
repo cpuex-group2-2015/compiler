@@ -7,25 +7,37 @@ let rec fsqr f = f *. f in
 let rec fneg f = fneg_sub f in
 let rec print_newline _ = print_char 10 in
 
-let rec divide10 i res ten =
-  if i < (ten + 10) then
-    (res, (i - ten))
-  else
-    divide10 i (res + 1) (ten + 10)
-in
-
-let rec times10 x = let x8 = x * 8 in let x2 = x * 2 in x8 + x2 in
-
-let rec print_int_sub i =
+let rec print_int_sub i flag =
   if i < 10 then
-    print_char (48 + i)
+    if flag = 1 then (print_char 48; print_char (48 + i)) else print_char (48 + i)
+  else if i < 20 then
+    (print_char 49; print_char (38 + i))
+  else if i < 30 then
+    (print_char 50; print_char (28 + i))
+  else if i < 40 then
+    (print_char 51; print_char (18 + i))
+  else if i < 50 then
+    (print_char 52; print_char (8 + i))
+  else if i < 60 then
+    (print_char 53; print_char (i - 2))
+  else if i < 70 then
+    (print_char 54; print_char (i - 12))
+  else if i < 80 then
+    (print_char 55; print_char (i - 22))
+  else if i < 90 then
+    (print_char 56; print_char (i - 32))
   else
-   (let (d, m) = divide10 i 1 10 in
-    print_int_sub d;
-    print_char (48 + m))
+    (print_char 57; print_char (i - 42))
 in
 
-let rec print_int i = if (i >= 0) then (print_int_sub i) else (print_char 45; print_int_sub (-i)) in
+let rec print_int i =
+  if i < 100 then
+    print_int_sub i 0
+  else if i < 200 then
+    (print_char 49; print_int_sub (i - 100) 1)
+  else
+    (print_char 50; print_int_sub (i - 200) 1)
+in
 
 let rec int_of_float_pos f = int_of_float_sub (f +. 0.5) in
 
@@ -234,6 +246,8 @@ let rec atan x =
 	      (atan_i5 x)
 	    else
 	      (atan_tail x))))) in
+
+let rec times10 x = let x8 = x * 8 in let x2 = x * 2 in x8 + x2 in
 
 let rec read_int_sub res sign =
   let x = read_byte () in
