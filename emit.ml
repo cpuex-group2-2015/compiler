@@ -5,7 +5,7 @@ external geti : float -> int32 = "geti"
 let file = ref ""
 let address = ref 0
 let address_list = Hashtbl.create 0
-let heap_pointer = ref 0
+let data_list = Hashtbl.create 0
 let step = 1
 
 let rec int_to_binary' int digit res =
@@ -127,14 +127,21 @@ and g' oc = function (* 各命令のアセンブリ生成 *)
       let r = reg x in
 	Printf.fprintf oc "\tlis\t%s, %d\n" r n;
 	Printf.fprintf oc "\tori\t%s, %s, %d\n" r r m;
-	file := !file ^ Printf.sprintf "001110%s00000%s\n" (reg_to_binary r) (int_to_binary n 16 "");
+	file := !file ^ Printf.sprintf "001111%s00000%s\n" (reg_to_binary r) (int_to_binary n 16 "");
 	file := !file ^ Printf.sprintf "011001%s%s%s\n" (reg_to_binary r) (reg_to_binary r) (int_to_binary m 16 "");
 	address := !address + step * 2
   | (NonTail(x), FLi(Id.L(l))) ->
-      let s = load_label reg_tmp l in
-      Printf.fprintf oc "%s\tlf\t%s, 0(%s)\n" s (reg x) reg_tmp;
-      file := !file ^ (load_label_binary reg_tmp l);
-      file := !file ^ Printf.sprintf "110010%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary reg_tmp);
+      let d = Hashtbl.find data_list l in
+      let data_int = Int32.to_int (geti d) in
+      let n = data_int lsr 16 in
+      let m = data_int lxor (n lsl 16) in
+      Printf.fprintf oc "\tlis\t%s, ha16(%d)\n" reg_tmp data_int;
+      Printf.fprintf oc "\taddi\t%s, %s, lo16(%d)\n" reg_tmp reg_tmp data_int;
+      Printf.fprintf oc "\tmfgtf\t%s, %s\n" reg_tmp (reg x);
+      let n_binary = int_to_binary n 16 "" in
+      file := !file ^ Printf.sprintf "001111%s00000%s\n" (reg_to_binary (reg_tmp)) (String.sub n_binary ((String.length n_binary) - 16) 16);
+      file := !file ^ Printf.sprintf "001110%s%s%s\n" (reg_to_binary reg_tmp) (reg_to_binary reg_tmp) (int_to_binary m 16 "");
+      file := !file ^ Printf.sprintf "010101%s%s0000000000000000\n" (reg_to_binary (reg x)) (reg_to_binary reg_tmp);
       address := !address + step * 3
   | (NonTail(x), SetL(Id.L(y))) ->
       let s = load_label x y in
@@ -512,28 +519,17 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
   Hashtbl.add address_list x !address;
   g oc (Tail, e)
 
-(* let f oc (Prog(data, fundefs, e)) = *)
-let f oc bc dc zc p =
+let f oc bc zc p =
   let Prog(data, fundefs, e) = p in
   Format.eprintf "generating assembly...@.";
   (if data <> [] then
-    (List.iter
-       (fun (Id.L(x), d) ->
-	 let data_int = Int32.to_int (geti d) in
-	 Printf.fprintf oc "%s:\t # %f\n" x d;
-	 Printf.fprintf oc "\t.long\t%d\n" data_int;
-	 (if data_int >= 0 then file := !file ^ (int_to_binary data_int 32 "\n")
-	 else file := !file ^ (int_to_minus_binary (-data_int) 32) ^ "\n");
-	 Hashtbl.add address_list x !heap_pointer;
-	 heap_pointer := !heap_pointer + 4)
-       data));
+    (List.iter (fun (Id.L(x), d) -> Hashtbl.add data_list x d) data));
 
-  write_byte dc (Str.global_replace (Str.regexp "\n") "" !file);
   Printf.fprintf oc "\tlis\tr3, stack_pointer\n";
-  Printf.fprintf oc "\tli\tr4, %d\n" !heap_pointer;
+  Printf.fprintf oc "\tli\tr4, 0\n";
   Printf.fprintf oc "\tb\t_main_entry_\n";
   file := "00111100011000000000000000001111\n";
-  file := !file ^ "0011100010000000" ^ (int_to_binary !heap_pointer 16 "") ^ "\n";
+  file := !file ^ "0011100010000000" ^ (int_to_binary 0 16 "") ^ "\n";
   file := !file ^ "0100100000000000_main_entry_\n";
   address := !address + step * 3;
 
@@ -635,4 +631,4 @@ let f oc bc dc zc p =
   Hashtbl.iter write_to_hash_txt address_list;
   close_out hashchan;
 
-(*show_asm_prog "  " p*)
+  (*show_asm_prog "  " p*)

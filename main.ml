@@ -7,10 +7,10 @@ let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *
   if e = e' then e else
   iter (n - 1) e'
 
-let lexbuf outchan binchan datachan zerochan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
+let lexbuf outchan binchan zerochan l = (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
-  Emit.f outchan binchan datachan zerochan
+  Emit.f outchan binchan zerochan
     (RegAlloc.f
       (Simm.f
 	 (Virtual.f
@@ -21,7 +21,7 @@ let lexbuf outchan binchan datachan zerochan l = (* バッファをコンパイ�
 			   (Typing.f
 			      (Parser.exp Lexer.token l)))))))))
 
-let string s = lexbuf stdout stdout stdout stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let string s = lexbuf stdout stdout stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
 
 let deal_with_file_name f =
   if (String.sub f (String.length f - 3) 3) = ".ml" then String.sub f 0 (String.length f - 3) else f
@@ -31,7 +31,6 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let inchan = open_in (fname ^ ".ml") in
   let outchan = open_out ("result/" ^ fname ^ ".s") in
   let binchan = open_out ("result/" ^ fname ^ ".bin") in
-  let datachan = open_out ("result/" ^ fname ^ ".data") in
   let zerochan = open_out ("result/" ^ fname ^ ".zero") in
   try
     let libchan = open_in ("lib/lib.ml") in
@@ -47,13 +46,12 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     let inlength = in_channel_length inchan in
     let instring = String.create inlength in
     really_input inchan instring 0 inlength;
-    lexbuf outchan binchan datachan zerochan (Lexing.from_string (libstring ^ glstring ^ instring));
+    lexbuf outchan binchan zerochan (Lexing.from_string (libstring ^ glstring ^ instring));
     close_in inchan;
     close_out outchan;
     close_out binchan;
-    close_out datachan;
     close_out zerochan;
-  with e -> (close_in inchan; close_out outchan; close_out binchan; close_out datachan; close_out zerochan; raise e)
+  with e -> (close_in inchan; close_out outchan; close_out binchan; close_out zerochan; raise e)
 
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
