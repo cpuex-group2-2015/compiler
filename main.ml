@@ -1,4 +1,5 @@
 let limit = ref 1000
+let use_global = ref true
 
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
@@ -46,7 +47,11 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     let inlength = in_channel_length inchan in
     let instring = String.create inlength in
     really_input inchan instring 0 inlength;
-    lexbuf outchan binchan zerochan (Lexing.from_string (libstring ^ glstring ^ instring));
+    (if !use_global then
+       lexbuf outchan binchan zerochan (Lexing.from_string (libstring ^ glstring ^ instring))
+     else
+       lexbuf outchan binchan zerochan (Lexing.from_string (libstring ^ instring))
+    );
     close_in inchan;
     close_out outchan;
     close_out binchan;
@@ -57,6 +62,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: m
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
+     ("-gl", Arg.Int(fun i -> (if (i = 0) then (use_global := false))), "switch of global ml");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
