@@ -54,9 +54,38 @@
 	or	r5, r2, r2	# print_float_bit
 	mfftg	r2, f0		# f0 r2 -> ()
 	b	print_bit
-	fsqrt	f0, f0		# sqrt_sub
-	blr
 	fabs	f0, f0		# fabs_sub
 	blr
 	fneg	f0, f0		# fneg_sub
+	blr
+	li	r2, 0		# sqrt_sub
+	lis	r2, 0b0011111100000000
+	mfgtf	f1, r2
+	fmul	f1, f0, f1
+	lis	r2, 0b0011111111000000
+	mfgtf	f2, r2
+	mfftg	r2, f0
+	li	r5, 1
+	sr	r2, r2, r5
+	lis	r5, 0b0101111100110111
+	addi	r5, r5, 0b0101100111011111
+	neg	r2, r2
+	add	r2, r5, r2
+	mfgtf	f0, r2
+	fmul	f3, f0, f0
+	fmul	f3, f1, f3
+	fneg	f3, f3
+	fadd	f3, f2, f3
+	fmul	f0, f0, f3
+	fmul	f3, f0, f0
+	fmul	f3, f1, f3
+	fneg	f3, f3
+	fadd	f3, f2, f3
+	fmul	f0, f0, f3
+	fmul	f3, f0, f0
+	fmul	f3, f1, f3
+	fneg	f3, f3
+	fadd	f3, f2, f3
+	fmul	f0, f0, f3
+	finv	f0, f0
 	blr
