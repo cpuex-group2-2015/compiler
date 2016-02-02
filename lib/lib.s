@@ -89,3 +89,17 @@
 	fmul	f0, f0, f3
 	finv	f0, f0
 	blr
+	li	r2, 0		# read_int, read_float
+	li	r6, 8
+	recv	r5
+	or	r2, r2, r5
+	sl	r2, r2, r6
+	recv	r5
+	or	r2, r2, r5
+	sl	r2, r2, r6
+	recv	r5
+	or	r2, r2, r5
+	sl	r2, r2, r6
+	recv	r5
+	or	r2, r2, r5
+	blr
