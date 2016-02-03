@@ -265,23 +265,24 @@ let rec read_int_pre _ =
   else read_int_sub (x-48) 1
 in
 
-let rec read_float_sub res sign dot =
+let rec read_float_sub int_res f_res sign dot =
   let x = read_byte () in
-  if x = 32 then (if sign > 0.0 then res else (0.0 -. res))
-  else if x = 10 then (if sign > 0.0 then res else (0.0 -. res))
-  else if x = 46 then (read_float_sub res sign 0.1)
+  if x = 32 then (if sign > 0 then ((float_of_int int_res) +. f_res) else (0.0 -. ((float_of_int int_res) +. f_res)))
+  else if x = 10 then (if sign > 0 then ((float_of_int int_res) +. f_res) else (0.0 -. ((float_of_int int_res) +. f_res)))
+  else if x = 46 then (read_float_sub int_res f_res sign 10)
   else
-    let f = float_of_int (x - 48) in
-    if dot < 1.0 then (read_float_sub (res +. dot*.f) sign (dot/.1.0))
-    else (read_float_sub (res *. 10.0 +. f) sign dot)
+    let r = x - 48 in
+    let f = float_of_int r in
+    if dot > 1 then (read_float_sub int_res (f_res +. f/.(float_of_int dot)) sign (times10 dot))
+    else (read_float_sub ((times10 int_res) + r) f_res sign dot)
 in
 
 let rec read_float_pre _ =
   let x = read_byte () in
   if x = 32 then read_float_pre ()
   else if x = 10 then read_float_pre ()
-  else if x = 45 then read_float_sub 0.0 (-1.0) 1.0
-  else read_float_sub (float_of_int (x - 48)) 1.0 1.0
+  else if x = 45 then read_float_sub 0 0.0 (-1) 1
+  else read_float_sub (x - 48) 0.0 1 1
 in
 
 (*let rec read_int _ = let x = read_int_pre () in print_char 42; print_int x; print_char 42; print_char 10; x in*)
