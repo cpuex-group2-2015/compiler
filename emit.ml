@@ -522,11 +522,15 @@ let f oc bc zc p =
 
   Printf.fprintf oc "\tlis\tr3, stack_pointer\n";
   Printf.fprintf oc "\tli\tr4, 0\n";
+  Printf.fprintf oc "\tli\tr2, 0xaa\n";
+  Printf.fprintf oc "\tsend\tr2\n";
   Printf.fprintf oc "\tb\t_main_entry_\n";
   file := "00111100011000000000000000001111\n";
   file := !file ^ "0011100010000000" ^ (int_to_binary 0 16 "") ^ "\n";
+  file := !file ^ "00111000010000000000000010101010\n";
+  file := !file ^ "00000100010000000000000000000000\n";
   file := !file ^ "0100100000000000_main_entry_\n";
-  address := !address + step * 3;
+  address := !address + step * 5;
 
   Hashtbl.add address_list "int_of_float_sub" !address;
   Hashtbl.add address_list "_first_label" (!address + step * 16);
