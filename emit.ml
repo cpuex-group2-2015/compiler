@@ -547,8 +547,8 @@ let f oc bc zc p =
   Hashtbl.add address_list "fneg_sub" (!address + step * 58);
   Hashtbl.add address_list "sqrt_sub" (!address + step * 60);
   Hashtbl.add address_list "read_int" (!address + step * 91);
-  Hashtbl.add address_list "read_float" (!address + step * 91);
-  address := !address + step * 105;
+  Hashtbl.add address_list "read_float" (!address + step * 105);
+  address := !address + step * 120;
 
   file := !file ^ "01011000010000000000000000000000\n"; (* mfftg # int_of_float_sub *)
   file := !file ^ "01011000101000000000000000000000\n"; (* mfftg *)
@@ -641,7 +641,7 @@ let f oc bc zc p =
   file := !file ^ "11111100000000000001100000110010\n"; (* fmul *)
   file := !file ^ "11111100000000000000000000100100\n"; (* finv *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
-  file := !file ^ "00111000010000000000000000000000\n"; (* li *)
+  file := !file ^ "00111000010000000000000000000000\n"; (* li # read_int *)
   file := !file ^ "00111000110000000000000000001000\n"; (* li *)
   file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
   file := !file ^ "01111100010000100010101101111000\n"; (* or *)
@@ -654,6 +654,21 @@ let f oc bc zc p =
   file := !file ^ "01111100010000100011000000110000\n"; (* sl *)
   file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
   file := !file ^ "01111100010000100010101101111000\n"; (* or *)
+  file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
+  file := !file ^ "00111000010000000000000000000000\n"; (* li # read_float *)
+  file := !file ^ "00111000110000000000000000001000\n"; (* li *)
+  file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
+  file := !file ^ "01111100010000100010101101111000\n"; (* or *)
+  file := !file ^ "01111100010000100011000000110000\n"; (* sl *)
+  file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
+  file := !file ^ "01111100010000100010101101111000\n"; (* or *)
+  file := !file ^ "01111100010000100011000000110000\n"; (* sl *)
+  file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
+  file := !file ^ "01111100010000100010101101111000\n"; (* or *)
+  file := !file ^ "01111100010000100011000000110000\n"; (* sl *)
+  file := !file ^ "00001000101000000000000000000000\n"; (* recv *)
+  file := !file ^ "01111100010000100010101101111000\n"; (* or *)
+  file := !file ^ "01010100000000100000000000000000\n"; (* mfgtf *)
   file := !file ^ "01001100000000000000000000000000\n"; (* blr *)
 
   List.iter (fun fundef -> h oc fundef) fundefs;
