@@ -645,6 +645,7 @@ let f oc bc zc p =
   g oc (NonTail("_R_0"), e);
   print_string ("all " ^ (string_of_int (!address * step)) ^ " in total\n");
   Printf.fprintf zc "%s" !file;
+  file := (Str.global_replace (Str.regexp "011111000000111110000001110100110\n011111011111000000000001010100110\n") "" !file);
   write_byte bc (Str.global_replace (Str.regexp "\n") "" !file);
 
   let hashchan = open_out ("result/funs.txt") in
